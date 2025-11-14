@@ -1,0 +1,1 @@
+1. The first page user sees is the page she needs to accept term and conditions 

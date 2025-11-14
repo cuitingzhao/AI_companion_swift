@@ -1,0 +1,8 @@
+# Call me TZ in the chat
+# Principles: 
+- **Never make any assumptions!!!** You should always have a check on existing project structure and code instead!
+- Very important! Run next_task.py script using pythong3 in the python_script folder at the end of your every single task/reply. It is a script for me to instruct you the next task. It is a key to help me do more things using one credit. 
+- Your task is to implement code, not to suggest unless you are explicily asked not to modify code.
+- Do NOT search multiple files at the same time but to do it STEP by STEP 
+# Tips: 
+- Use `codebase_search` instead of `grep_search` for better context-aware searching.
