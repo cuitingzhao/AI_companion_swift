@@ -1,0 +1,49 @@
+import SwiftUI
+
+public struct OnboardingScaffold<Header: View, Content: View>: View {
+    private let header: () -> Header
+    private let content: () -> Content
+    private let topSpacing: CGFloat
+
+    public init(topSpacing: CGFloat = 140,
+                @ViewBuilder header: @escaping () -> Header = { EmptyView() },
+                @ViewBuilder content: @escaping () -> Content) {
+        self.topSpacing = topSpacing
+        self.header = header
+        self.content = content
+    }
+
+    public var body: some View {
+        ZStack(alignment: .top) {
+            AppColors.gradientBackground
+                .ignoresSafeArea()
+
+            Image("star_bg")
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
+                .opacity(0.6)
+
+            header()
+                .padding(.top, 32)
+
+            VStack {
+                Spacer(minLength: topSpacing)
+
+                ZStack(alignment: .top) {
+                    RoundedRectangle(cornerRadius: 28)
+                        .fill(Color.white)
+                        .shadow(color: Color.black.opacity(0.06), radius: 20, x: 0, y: 8)
+
+                    VStack(spacing: 24) {
+                        content()
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 20)
+                }
+                .padding(.horizontal, 32)
+                .padding(.bottom, 32)
+            }
+        }
+    }
+}
