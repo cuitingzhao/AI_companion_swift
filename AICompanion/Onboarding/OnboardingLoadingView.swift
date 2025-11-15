@@ -4,6 +4,7 @@ public struct OnboardingLoadingView: View {
     @ObservedObject private var state: OnboardingState
     private let wheelNamespace: Namespace.ID?
     @State private var isSpinning = false
+    @State private var hasSubmitted = false
 
     public init(state: OnboardingState, wheelNamespace: Namespace.ID? = nil) {
         self.state = state
@@ -50,7 +51,25 @@ public struct OnboardingLoadingView: View {
             }
         }
         .onAppear {
+            print("🔄 OnboardingLoadingView appeared")
             isSpinning = true
+            if !hasSubmitted {
+                print("🔄 Starting submit task...")
+                hasSubmitted = true
+                Task {
+                    print("🔄 Task started, calling submitOnboarding()")
+                    await state.submitOnboarding()
+                    print("🔄 submitOnboarding() returned")
+                    if state.lastSubmitResponse != nil {
+                        print("🔄 Got response, transitioning to baziResult")
+                        state.currentStep = .baziResult
+                    } else {
+                        print("⚠️ No response received")
+                    }
+                }
+            } else {
+                print("🔄 Already submitted, skipping")
+            }
         }
     }
 }

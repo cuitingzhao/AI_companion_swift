@@ -29,7 +29,7 @@ public struct PrimaryButtonStyle: ButtonStyle {
             .foregroundStyle(foregroundColor(isPressed: configuration.isPressed))
             .padding(.horizontal, horizontalPadding)
             .padding(.vertical, verticalPadding)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: 280)
             .background(backgroundShape(isPressed: configuration.isPressed))
             .overlay(border)
             .scaleEffect(configuration.isPressed ? 0.98 : 1)

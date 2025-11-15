@@ -4,6 +4,10 @@
 AICompanion/
 |-- AICompanion/
 |   |-- AICompanionApp.swift (app entry point)
+|   |-- Models/
+|   |   |-- City.swift
+|   |   |-- Bazi.swift
+|   |   |-- PersonalityTrait.swift
 |   |-- DesignSystem/
 |   |   |-- Colors.swift
 |   |   |-- Fonts.swift
@@ -13,6 +17,7 @@ AICompanion/
 |   |
 |   |-- Networking/
 |   |   |-- CitiesAPI.swift
+|   |   |-- OnboardingAPI.swift
 |   |
 |   |-- Onboarding/
 |   |   |-- OnboardingState.swift
@@ -22,6 +27,9 @@ AICompanion/
 |   |   |-- OnboardingNicknameView.swift
 |   |   |-- OnboardingProfileView.swift
 |   |   |-- OnboardingLoadingView.swift
+|   |   |-- BaziAnalysisResultView.swift
+|   |   |-- KYCIntroView.swift
+|   |   |-- KYCPersonalityReviewView.swift
 |   |   |-- Components/
 |   |       |-- GenderChip.swift
 |   |       |-- CitySearchField.swift

@@ -5,6 +5,7 @@ public struct OnboardingProfileView: View {
     private let wheelNamespace: Namespace.ID?
     private let onFinish: () -> Void
     @State private var isShowingBirthDatePicker = false
+    @State private var isShowingCityPicker = false
 
     public init(state: OnboardingState, wheelNamespace: Namespace.ID? = nil, onFinish: @escaping () -> Void = {}) {
         self.state = state
@@ -75,9 +76,39 @@ public struct OnboardingProfileView: View {
                             Text("出生地点")
                                 .font(AppFonts.caption)
                                 .foregroundStyle(AppColors.neutralGray)
-                            CitySearchField(text: $state.cityQuery) { city in
-                                state.selectedCity = city
+                            Button(action: { isShowingCityPicker = true }) {
+                                HStack {
+                                    let displayText: String = {
+                                        if let selected = state.selectedCity {
+                                            return selected.name
+                                        } else if !state.cityQuery.isEmpty {
+                                            return state.cityQuery
+                                        } else {
+                                            return "请选择出生地点"
+                                        }
+                                    }()
+
+                                    Text(displayText)
+                                        .font(AppFonts.small)
+                                        .foregroundStyle(
+                                            state.selectedCity == nil && state.cityQuery.isEmpty
+                                            ? AppColors.neutralGray
+                                            : AppColors.textBlack
+                                        )
+
+                                    Spacer()
+
+                                    Image(systemName: "chevron.down")
+                                        .foregroundColor(AppColors.neutralGray)
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 10)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .stroke(AppColors.textBlack, lineWidth: 1)
+                                )
                             }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -143,6 +174,22 @@ public struct OnboardingProfileView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 16)
+            }
+        }
+        .sheet(isPresented: $isShowingCityPicker) {
+            VStack(spacing: 16) {
+                Text("选择出生地点")
+                    .font(AppFonts.body)
+                    .foregroundStyle(AppColors.textBlack)
+                    .padding(.top, 16)
+
+                CitySearchField(text: $state.cityQuery) { city in
+                    state.selectedCity = city
+                    isShowingCityPicker = false
+                }
+                .padding(.horizontal, 24)
+
+                Spacer(minLength: 0)
             }
         }
     }

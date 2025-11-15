@@ -68,3 +68,81 @@ Submit per-trait personality feedback after the user reviews each AI-generated t
 ### Errors
 - `404 Not Found` – if profile/personality analysis cannot be located for the `user_id`.
 - `500 Internal Server Error` – for persistence/validation issues (logged for debugging).
+
+---
+
+## 3. POST `/api/v1/onboarding/message`
+Conversational KYC step during onboarding.
+
+### Description
+- Handles a single turn of the KYC conversation.
+- The AI asks follow-up questions, comments on the user’s answers, and tracks which KYC fields are completed.
+- For student users, work-related fields can be automatically marked as "不适用".
+
+### Request Body — [`KYCMessageRequest`](../app/schemas/kyc.py)
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `user_id` | integer | Yes | Existing user id from `/onboarding/submit`. |
+| `message` | string (1–1000 chars) | Yes | User’s free-text reply in the KYC conversation. |
+
+### Response — [`KYCMessageResponse`](../app/schemas/kyc.py)
+| Field | Type | Description |
+| --- | --- | --- |
+| `reply` | string | AI reply to show to the user for the next turn. |
+| `collection_status` | string | Either `"进行中"` or `"完成"`. |
+| `kyc_completed` | boolean | Whether all required KYC info has been collected. |
+
+### Errors
+- `404 Not Found` – if the `user_id` cannot be resolved.
+- `500 Internal Server Error` – unexpected failures (`Internal server error: ...`).
+
+---
+
+## 4. POST `/api/v1/onboarding/skip`
+Skip the KYC conversation during onboarding.
+
+### Description
+- Marks KYC as skipped so the user can continue using the app without completing all KYC questions.
+- The missing information can be collected later in normal conversations.
+
+### Request Body — [`KYCSkipRequest`](../app/schemas/kyc.py)
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `user_id` | integer | Yes | Existing user id from `/onboarding/submit`. |
+
+### Response — [`KYCSkipResponse`](../app/schemas/kyc.py)
+```json
+{
+  "status": "success",
+  "message": "已跳过KYC信息收集，你可以随时在聊天中补充这些信息"
+}
+```
+
+### Errors
+- `404 Not Found` – if the `user_id` cannot be resolved.
+- `500 Internal Server Error` – unexpected failures (`Internal server error: ...`).
+
+---
+
+## 5. GET `/api/v1/onboarding/status/{user_id}`
+Check the KYC collection status for a given user.
+
+### Description
+- Returns which KYC fields have already been collected and which are still pending.
+- Allows the client to decide whether to continue the KYC conversation or show a “completed” state.
+
+### Path Parameters
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `user_id` | integer | Yes | Existing user id from `/onboarding/submit`. |
+
+### Response — [`KYCStatusResponse`](../app/schemas/kyc.py)
+| Field | Type | Description |
+| --- | --- | --- |
+| `kyc_completed` | boolean | Whether KYC is fully completed for the user. |
+| `collected_fields` | object | Map of field name → collected value. |
+| `pending_fields` | array of strings | KYC field names still to be collected. |
+
+### Errors
+- `404 Not Found` – if the `user_id` cannot be resolved.
+- `500 Internal Server Error` – unexpected failures (`Internal server error: ...`).

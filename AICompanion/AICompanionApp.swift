@@ -17,18 +17,34 @@ struct AICompanionApp: App {
                 switch onboardingState.currentStep {
                 case .intro:
                     OnboardingIntroView(state: onboardingState) {
+                        print("🟣 Navigating from intro to nickname")
                         onboardingState.currentStep = .nickname
                     }
                 case .nickname:
                     OnboardingNicknameView(state: onboardingState) {
+                        print("🟣 Navigating from nickname to profile")
                         onboardingState.currentStep = .profile
                     }
                 case .profile:
                     OnboardingProfileView(state: onboardingState, wheelNamespace: wheelNamespace) {
+                        print("🟣 Navigating from profile to loading")
                         onboardingState.currentStep = .loading
                     }
                 case .loading:
                     OnboardingLoadingView(state: onboardingState, wheelNamespace: wheelNamespace)
+                case .baziResult:
+                    BaziAnalysisResultView(state: onboardingState) {
+                        print("🟣 Navigating from baziResult to kycIntro")
+                        onboardingState.currentStep = .kycIntro
+                    }
+                case .kycIntro:
+                    KYCIntroView(state: onboardingState) {
+                        print("🟣 Navigating from kycIntro to kycPersonality")
+                        onboardingState.currentPersonalityIndex = 0
+                        onboardingState.currentStep = .kycPersonality
+                    }
+                case .kycPersonality:
+                    KYCPersonalityReviewView(state: onboardingState)
                 }
             }
             .animation(.spring(response: 0.7, dampingFraction: 0.85), value: onboardingState.currentStep)

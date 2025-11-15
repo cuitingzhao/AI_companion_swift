@@ -4,11 +4,14 @@ public struct OnboardingScaffold<Header: View, Content: View>: View {
     private let header: () -> Header
     private let content: () -> Content
     private let topSpacing: CGFloat
+    private let containerColor: Color
 
     public init(topSpacing: CGFloat = 140,
+                containerColor: Color = Color.white,
                 @ViewBuilder header: @escaping () -> Header = { EmptyView() },
                 @ViewBuilder content: @escaping () -> Content) {
         self.topSpacing = topSpacing
+        self.containerColor = containerColor
         self.header = header
         self.content = content
     }
@@ -35,7 +38,7 @@ public struct OnboardingScaffold<Header: View, Content: View>: View {
 
                 ZStack(alignment: .top) {
                     RoundedRectangle(cornerRadius: 28)
-                        .fill(Color.white)
+                        .fill(containerColor)
                         .shadow(color: Color.black.opacity(0.06), radius: 20, x: 0, y: 8)
 
                     VStack(spacing: 24) {

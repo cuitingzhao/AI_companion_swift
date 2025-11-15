@@ -8,6 +8,9 @@ public final class OnboardingState: ObservableObject {
         case nickname
         case profile
         case loading
+        case baziResult
+        case kycIntro
+        case kycPersonality
     }
 
     public enum Gender: String, CaseIterable, Codable {
@@ -29,6 +32,16 @@ public final class OnboardingState: ObservableObject {
     @Published public var cityQuery: String = ""
     @Published public var selectedCity: City? = nil
 
+    @Published public var submitUserId: Int?
+    @Published public var lastSubmitResponse: OnboardingSubmitResponse?
+    @Published public var isSubmittingOnboarding: Bool = false
+    @Published public var submitError: String?
+
+    // KYC personality
+    @Published public var personalityTraits: [PersonalityTrait] = []
+    @Published public var currentPersonalityIndex: Int = 0
+    @Published public var personalityTraitRatings: [Int: PersonalityAccuracy] = [:]
+
     public let nicknameMaxLength: Int = 12
 
     public init() {
@@ -36,6 +49,12 @@ public final class OnboardingState: ObservableObject {
         var comps = DateComponents()
         comps.year = 1990; comps.month = 1; comps.day = 1; comps.hour = 0; comps.minute = 0
         self.birthDate = Calendar.current.date(from: comps) ?? Date(timeIntervalSince1970: 0)
+    }
+
+    public enum PersonalityAccuracy: String, Codable {
+        case notAccurate
+        case partiallyAccurate
+        case veryAccurate
     }
 
     public var latestAllowedDate: Date {
@@ -49,6 +68,61 @@ public final class OnboardingState: ObservableObject {
         var comps = DateComponents()
         comps.year = 1900; comps.month = 1; comps.day = 1
         return Calendar.current.date(from: comps) ?? Date(timeIntervalSince1970: 0)
+    }
+
+    @MainActor
+    public func submitOnboarding() async {
+        print("🔵 submitOnboarding() called")
+        print("🔵 Selected city:", selectedCity?.name ?? "nil")
+        print("🔵 Nickname:", nickname)
+        print("🔵 Gender:", gender.rawValue)
+        print("🔵 Birth date:", birthDate)
+        
+        guard let city = selectedCity else {
+            print("❌ No city selected, aborting")
+            return
+        }
+
+        print("🟢 Starting submission...")
+        isSubmittingOnboarding = true
+        submitError = nil
+
+        do {
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "zh_CN")
+            formatter.timeZone = TimeZone.current
+            formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+            let birthTime = formatter.string(from: birthDate)
+            print("🟢 Formatted birth time:", birthTime)
+
+            let request = OnboardingSubmitRequest(
+                nickname: nickname,
+                birthTime: birthTime,
+                cityId: city.id,
+                gender: gender.rawValue
+            )
+            print("🚀 Submitting onboarding request:", request)
+            print("🚀 Request details - nickname:", request.nickname, "birthTime:", request.birthTime, "cityId:", request.cityId, "gender:", request.gender)
+            
+            let response = try await OnboardingAPI.shared.submit(request)
+            print("✅ Response received:", response)
+            print("✅ User ID:", response.userId)
+            
+            lastSubmitResponse = response
+            submitUserId = response.userId
+
+            // Initialize KYC personality data
+            personalityTraits = response.personalityTraits ?? []
+            currentPersonalityIndex = 0
+            personalityTraitRatings = [:]
+        } catch {
+            print("❌ Submit error:", error)
+            print("❌ Error details:", error.localizedDescription)
+            submitError = error.localizedDescription
+        }
+
+        isSubmittingOnboarding = false
+        print("🔵 submitOnboarding() completed")
     }
 
     public var isNicknameValid: Bool {

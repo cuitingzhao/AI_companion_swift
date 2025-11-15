@@ -15,7 +15,17 @@ public enum AppColors {
     public static let textBlack = Color(hex: "5C5C5C")
     public static let accentYellow = Color(hex: "F4CD0B")
     public static let accentGreen = Color(hex: "14CE75")
+    public static let accentBlue = Color(hex: "4A90E2")
+    public static let accentRed = Color(hex: "FF5A5F")
+    public static let accentBrown = Color(hex: "8B572A")
     public static let neutralGray = Color(hex: "A6A6A6")
+
+    // Element colors
+    public static let elementGold = accentYellow
+    public static let elementWood = accentGreen
+    public static let elementWater = accentBlue
+    public static let elementFire = accentRed
+    public static let elementEarth = accentBrown
 }
 
 public extension Color {
