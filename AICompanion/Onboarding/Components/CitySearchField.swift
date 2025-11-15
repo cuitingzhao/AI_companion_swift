@@ -37,7 +37,7 @@ public struct CitySearchField: View {
                             HStack {
                                 Text(city.name)
                                     .foregroundStyle(AppColors.textBlack)
-                                    .font(AppFonts.body)
+                                    .font(AppFonts.small)
                                 if let admin = city.admin, !admin.isEmpty {
                                     Text("·")
                                         .foregroundStyle(AppColors.neutralGray)

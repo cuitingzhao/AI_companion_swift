@@ -3,30 +3,37 @@
 ```text
 AICompanion/
 |-- AICompanion/
-|   |-- ... (app target source: SwiftUI app entry, feature modules integration)
+|   |-- AICompanionApp.swift (app entry point)
+|   |-- DesignSystem/
+|   |   |-- Colors.swift
+|   |   |-- Fonts.swift
+|   |   |-- Components/
+|   |       |-- PrimaryButton.swift
+|   |       |-- AppTextField.swift
+|   |
+|   |-- Networking/
+|   |   |-- CitiesAPI.swift
+|   |
+|   |-- Onboarding/
+|   |   |-- OnboardingState.swift
+|   |   |-- OnboardingScaffold.swift
+|   |   |-- OnboardingHeader.swift
+|   |   |-- OnboardingIntroView.swift
+|   |   |-- OnboardingNicknameView.swift
+|   |   |-- OnboardingProfileView.swift
+|   |   |-- OnboardingLoadingView.swift
+|   |   |-- Components/
+|   |       |-- GenderChip.swift
+|   |       |-- CitySearchField.swift
+|   |
+|   |-- Resources/
+|       |-- ... (shared images/assets, etc.)
 |
 |-- AICompanion.xcodeproj/
 |   |-- ... (Xcode project configuration)
 |
-|-- DesignSystem/
-|   |-- Colors.swift
-|   |-- Fonts.swift
-|   |-- Components/
-|       |-- PrimaryButton.swift
-|       |-- AppTextField.swift
-|
-|-- Networking/
-|   |-- ... (API clients, models, etc.)
-|
-|-- Onboarding/
-|   |-- OnboardingState.swift
-|   |-- OnboardingScaffold.swift
-|   |-- OnboardingIntroView.swift
-|   |-- OnboardingNicknameView.swift
-|   |-- OnboardingProfileView.swift
-|
 |-- Resources/
-|   |-- ... (shared images/assets, etc.)
+|   |-- ... (project-level resources)
 |
 |-- python_script/
 |   |-- next_task.py

@@ -14,7 +14,10 @@ public struct OnboardingScaffold<Header: View, Content: View>: View {
     }
 
     public var body: some View {
-        ZStack(alignment: .top) {
+        let screenWidth = UIScreen.main.bounds.width
+        let containerWidth = screenWidth - 48
+        
+        return ZStack(alignment: .top) {
             AppColors.gradientBackground
                 .ignoresSafeArea()
 
@@ -41,9 +44,10 @@ public struct OnboardingScaffold<Header: View, Content: View>: View {
                     .padding(.horizontal, 24)
                     .padding(.vertical, 20)
                 }
-                .padding(.horizontal, 32)
-                .padding(.bottom, 32)
+                .frame(width: containerWidth)
+                .padding(.bottom, 28)
             }
+            .ignoresSafeArea(.keyboard)
         }
     }
 }

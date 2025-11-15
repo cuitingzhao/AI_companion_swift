@@ -10,42 +10,47 @@ public struct OnboardingNicknameView: View {
     }
 
     public var body: some View {
-        OnboardingScaffold(header: header) {
-            VStack(spacing: 24) {
-                Text("👋让我们认识一下")
-                    .font(AppFonts.subtitle)
-                    .foregroundStyle(AppColors.textBlack)
+        OnboardingScaffold(topSpacing: 180, header: { OnboardingHeader() }) {
+            VStack(spacing: 0) {
+                Spacer()
+                
+                VStack(spacing: 24) {
+                    Text("👋让我们认识一下")
+                        .font(AppFonts.subtitle)
+                        .foregroundStyle(AppColors.textBlack)
 
-                Text("我要如何称呼你呢？")
-                    .font(AppFonts.body)
-                    .foregroundStyle(AppColors.textBlack)
+                    Text("我要如何称呼你呢？")
+                        .font(AppFonts.body)
+                        .foregroundStyle(AppColors.textBlack)
 
-                AppTextField("昵称", text: Binding(
-                    get: { state.nickname },
-                    set: { newValue in
-                        state.nickname = state.sanitizeNickname(newValue)
-                    }
-                ))
-
-                PrimaryButton(action: { onContinue() }) {
-                    Text("开始")
+                    AppTextField("昵称", text: Binding(
+                        get: { state.nickname },
+                        set: { newValue in
+                            state.nickname = state.sanitizeNickname(newValue)
+                        }
+                    ))
                 }
-                .disabled(!state.isNicknameValid)
-                .opacity(state.isNicknameValid ? 1 : 0.6)
+                
+                Spacer()
 
-                Text("请接受用户隐私政策和使用协议")
-                    .font(AppFonts.small)
-                    .foregroundStyle(AppColors.neutralGray)
+                VStack(spacing: 12) {
+                    PrimaryButton(
+                        action: { onContinue() },
+                        style: .init(variant: .filled, verticalPadding: 12)
+                    ) {
+                        Text("开始")
+                            .foregroundStyle(.white)
+                    }
+                    .disabled(!state.isNicknameValid)
+                    .opacity(state.isNicknameValid ? 1 : 0.6)
+                    
+                }
             }
         }
     }
 
-    @ViewBuilder
-    private func header() -> some View {
-        Image("fortune_wheel_small")
-            .resizable()
-            .scaledToFit()
-            .frame(width: 72, height: 72)
-            .padding(.top, 24)
-    }
+}
+
+#Preview {
+    OnboardingNicknameView(state: OnboardingState(), onContinue: {})
 }

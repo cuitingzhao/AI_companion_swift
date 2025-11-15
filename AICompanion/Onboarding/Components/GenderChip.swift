@@ -19,17 +19,17 @@ public struct GenderChip: View {
     public var body: some View {
         Button(action: action) {
             Text(text)
-                .font(AppFonts.body)
+                .font(AppFonts.small)
                 .foregroundStyle(isSelected ? Color.white : AppColors.textBlack)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 14)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
                 .frame(maxWidth: .infinity)
                 .background(
-                    RoundedRectangle(cornerRadius: 60)
+                    RoundedRectangle(cornerRadius: 20)
                         .fill(isSelected ? AppColors.purple : Color.white)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 60)
+                    RoundedRectangle(cornerRadius: 20)
                         .stroke(isSelected ? Color.clear : AppColors.textBlack, lineWidth: 1)
                 )
         }

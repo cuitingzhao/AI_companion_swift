@@ -18,17 +18,18 @@ public struct AppTextField<Accessory: View>: View {
     public var body: some View {
         HStack(spacing: 12) {
             TextField(title, text: text)
-                .font(AppFonts.body)
+                .font(AppFonts.small)
                 .foregroundStyle(AppColors.textBlack)
                 .placeholder(when: text.wrappedValue.isEmpty) {
                     Text(title)
                         .foregroundStyle(AppColors.neutralGray)
-                        .font(AppFonts.body)
+                        .font(AppFonts.small)
                 }
 
             accessory
         }
-        .padding(16)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
         .overlay(
             RoundedRectangle(cornerRadius: 20)
                 .stroke(AppColors.textBlack, lineWidth: 1)

@@ -2,72 +2,159 @@ import SwiftUI
 
 public struct OnboardingProfileView: View {
     @ObservedObject private var state: OnboardingState
+    private let wheelNamespace: Namespace.ID?
     private let onFinish: () -> Void
+    @State private var isShowingBirthDatePicker = false
 
-    public init(state: OnboardingState, onFinish: @escaping () -> Void = {}) {
+    public init(state: OnboardingState, wheelNamespace: Namespace.ID? = nil, onFinish: @escaping () -> Void = {}) {
         self.state = state
+        self.wheelNamespace = wheelNamespace
         self.onFinish = onFinish
     }
 
     public var body: some View {
-        OnboardingScaffold(header: header) {
-            VStack(alignment: .leading, spacing: 20) {
-                Text("你好呀！ \(state.nickname.isEmpty ? "" : state.nickname)")
+        OnboardingScaffold(topSpacing: 180, header: {
+            if let wheelNamespace {
+                OnboardingHeader(matchedId: "fortuneWheel", namespace: wheelNamespace)
+            } else {
+                OnboardingHeader()
+            }
+        }) {
+            VStack(spacing: 0) {
+                Spacer()
+                
+                VStack(alignment: .leading, spacing: 20) {
+                    Text("你好呀！ \(state.nickname.isEmpty ? "" : state.nickname)")
+                        .font(AppFonts.subtitle)
+                        .foregroundStyle(AppColors.textBlack)
+
+                    Text("为了做一个合格的五行伙伴，我需要以下信息计算你的生辰八字")
+                        .font(AppFonts.small)
+                        .foregroundStyle(AppColors.textBlack)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.bottom, 6)
+
+                    HStack(spacing: 12) {
+                        GenderChip("女", isSelected: state.gender == .female) {
+                            state.gender = .female
+                        }
+                        GenderChip("男", isSelected: state.gender == .male) {
+                            state.gender = .male
+                        }
+                    }
+
+                    VStack(spacing: 16) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("出生日期和时间（公历）")
+                                .font(AppFonts.caption)
+                                .foregroundStyle(AppColors.neutralGray)
+
+                            Button(action: { isShowingBirthDatePicker = true }) {
+                                HStack {
+                                    Text(formattedBirthDate)
+                                        .font(AppFonts.small)
+                                        .foregroundStyle(AppColors.textBlack)
+
+                                    Spacer()
+
+                                    Image(systemName: "chevron.down")
+                                        .foregroundColor(AppColors.neutralGray)
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 10)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .stroke(AppColors.textBlack, lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        // City search
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("出生地点")
+                                .font(AppFonts.caption)
+                                .foregroundStyle(AppColors.neutralGray)
+                            CitySearchField(text: $state.cityQuery) { city in
+                                state.selectedCity = city
+                            }
+                        }
+                    }
+                }
+                
+                Spacer()
+
+                VStack(spacing: 12) {
+                    PrimaryButton(
+                        action: { onFinish() },
+                        style: .init(variant: .filled, verticalPadding: 12)
+                    ) {
+                        Text("开始")
+                            .foregroundStyle(.white)
+                    }
+                    .disabled(!state.isProfileValid)
+                    .opacity(state.isProfileValid ? 1 : 0.6)
+                }
+            }
+        }
+        .sheet(isPresented: $isShowingBirthDatePicker) {
+            VStack(spacing: 24) {
+                Text("选择出生日期和时间")
                     .font(AppFonts.subtitle)
                     .foregroundStyle(AppColors.textBlack)
-
-                Text("为了做一个合格的五行伙伴，我需要以下信息计算你的生辰八字")
-                    .font(AppFonts.body)
-                    .foregroundStyle(AppColors.textBlack)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.bottom, 6)
-
-                HStack(spacing: 12) {
-                    GenderChip("女", isSelected: state.gender == .female) {
-                        state.gender = .female
-                    }
-                    GenderChip("男", isSelected: state.gender == .male) {
-                        state.gender = .male
-                    }
-                }
-
+                    .padding(.top, 16)
+                
                 VStack(spacing: 16) {
-                    // Date + Time
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("出生日期和时间（公历）")
-                            .font(AppFonts.small)
-                            .foregroundStyle(AppColors.neutralGray)
-                        DatePicker("出生日期和时间（公历）", selection: $state.birthDate, in: state.earliestAllowedDate...state.latestAllowedDate, displayedComponents: [.date, .hourAndMinute])
-                            .labelsHidden()
-                            .datePickerStyle(.compact)
-                            .padding(16)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .stroke(AppColors.textBlack, lineWidth: 1)
-                            )
-                    }
-
-                    // City search
-                    CitySearchField(text: $state.cityQuery) { city in
-                        state.selectedCity = city
-                    }
+                    Text("日期")
+                        .font(AppFonts.small)
+                        .foregroundStyle(AppColors.neutralGray)
+                    DatePicker(
+                        "",
+                        selection: $state.birthDate,
+                        in: state.earliestAllowedDate...state.latestAllowedDate,
+                        displayedComponents: [.date]
+                    )
+                    .datePickerStyle(.wheel)
+                    .environment(\.locale, Locale(identifier: "zh_CN"))
+                    .environment(\.font, AppFonts.small)
+                    .labelsHidden()
+                    
+                    Text("时间")
+                        .font(AppFonts.small)
+                        .foregroundStyle(AppColors.neutralGray)
+                        .padding(.top, 8)
+                    DatePicker(
+                        "",
+                        selection: $state.birthDate,
+                        displayedComponents: [.hourAndMinute]
+                    )
+                    .datePickerStyle(.wheel)
+                    .environment(\.locale, Locale(identifier: "zh_CN"))
+                    .environment(\.font, AppFonts.small)
+                    .labelsHidden()
                 }
 
-                PrimaryButton(action: { onFinish() }) {
-                    Text("开始")
+                PrimaryButton(
+                    action: { isShowingBirthDatePicker = false },
+                    style: .init(variant: .filled, verticalPadding: 12)
+                ) {
+                    Text("完成")
+                        .foregroundStyle(.white)
                 }
-                .disabled(!state.isProfileValid)
-                .opacity(state.isProfileValid ? 1 : 0.6)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
             }
         }
     }
 
-    @ViewBuilder
-    private func header() -> some View {
-        Image("fortune_wheel_small")
-            .resizable()
-            .scaledToFit()
-            .frame(width: 72, height: 72)
-            .padding(.top, 24)
+    private var formattedBirthDate: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "yyyy年M月d日 HH:mm"
+        return formatter.string(from: state.birthDate)
     }
+}
+
+#Preview {
+    OnboardingProfileView(state: OnboardingState(), wheelNamespace: nil, onFinish: {})
 }

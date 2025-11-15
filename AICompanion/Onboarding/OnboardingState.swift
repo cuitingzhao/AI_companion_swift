@@ -3,10 +3,19 @@ import SwiftUI
 import Combine
 
 public final class OnboardingState: ObservableObject {
+    public enum Step {
+        case intro
+        case nickname
+        case profile
+        case loading
+    }
+
     public enum Gender: String, CaseIterable, Codable {
         case female
         case male
     }
+
+    @Published public var currentStep: Step = .intro
 
     // Page 1
     @Published public var acceptedTerms: Bool = false

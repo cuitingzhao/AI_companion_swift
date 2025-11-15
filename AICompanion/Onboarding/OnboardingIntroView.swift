@@ -12,62 +12,73 @@ public struct OnboardingIntroView: View {
     }
 
     public var body: some View {
-        OnboardingScaffold(header: header) {
-            VStack(spacing: 20) {
-                Text("你的五行伙伴")
-                    .font(AppFonts.subtitle)
-                    .foregroundStyle(AppColors.textBlack)
+        OnboardingScaffold(topSpacing: 180, header: { OnboardingHeader() }) {
+            VStack(spacing: 0) {
+                Spacer()
+                
+                VStack(spacing: 16) {
+                    Text("你的五行伙伴")
+                        .font(AppFonts.large)
+                        .foregroundStyle(AppColors.textBlack)
 
-                Image("five_elements_together")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxWidth: 360)
+                    Image("five_elements_together")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: 280)
 
-                Text("不只是陪伴\n还要帮你成为更好的自己")
-                    .multilineTextAlignment(.center)
-                    .font(AppFonts.body)
-                    .foregroundStyle(AppColors.neutralGray)
-                    .padding(.top, 6)
-
-                PrimaryButton(action: { onStart() }) {
-                    Text("开始")
-                }
-                .disabled(!state.acceptedTerms)
-                .opacity(state.acceptedTerms ? 1 : 0.6)
-                .padding(.top, 12)
-
-                HStack(spacing: 8) {
-                    Button(action: { state.acceptedTerms.toggle() }) {
-                        Image(systemName: state.acceptedTerms ? "checkmark.square.fill" : "square")
-                            .foregroundColor(state.acceptedTerms ? AppColors.purple : AppColors.neutralGray)
-                    }
-                    .buttonStyle(.plain)
-
-                    Text("请接受")
-                        .font(AppFonts.small)
+                    Text("不只是陪伴\n还要帮你成为更好的自己")
+                        .multilineTextAlignment(.center)
+                        .font(AppFonts.body)
                         .foregroundStyle(AppColors.neutralGray)
-
-                    Button(action: { isShowingPrivacyPolicy = true }) {
-                        Text("用户隐私政策")
-                            .font(AppFonts.small)
-                            .underline()
-                            .foregroundStyle(AppColors.purple)
-                    }
-                    .buttonStyle(.plain)
-
-                    Text("和")
-                        .font(AppFonts.small)
-                        .foregroundStyle(AppColors.neutralGray)
-
-                    Button(action: { isShowingUserAgreement = true }) {
-                        Text("使用协议")
-                            .font(AppFonts.small)
-                            .underline()
-                            .foregroundStyle(AppColors.purple)
-                    }
-                    .buttonStyle(.plain)
+                        .padding(.top, 4)
                 }
-                .frame(maxWidth: .infinity, alignment: .center)
+                
+                Spacer()
+
+                VStack(spacing: 12) {
+                    PrimaryButton(
+                        action: { onStart() },
+                        style: .init(variant: .filled, verticalPadding: 12)
+                    ) {
+                        Text("开始")
+                            .foregroundStyle(.white)
+                    }
+                    .disabled(!state.acceptedTerms)
+                    .opacity(state.acceptedTerms ? 1 : 0.6)
+
+                    HStack(spacing: 8) {
+                        Button(action: { state.acceptedTerms.toggle() }) {
+                            Image(systemName: state.acceptedTerms ? "checkmark.square.fill" : "square")
+                                .foregroundColor(state.acceptedTerms ? AppColors.purple : AppColors.neutralGray)
+                        }
+                        .buttonStyle(.plain)
+
+                        Text("请接受")
+                            .font(AppFonts.caption)
+                            .foregroundStyle(AppColors.neutralGray)
+
+                        Button(action: { isShowingPrivacyPolicy = true }) {
+                            Text("用户隐私政策")
+                                .font(AppFonts.caption)
+                                .underline()
+                                .foregroundStyle(AppColors.purple)
+                        }
+                        .buttonStyle(.plain)
+
+                        Text("和")
+                            .font(AppFonts.caption)
+                            .foregroundStyle(AppColors.neutralGray)
+
+                        Button(action: { isShowingUserAgreement = true }) {
+                            Text("使用协议")
+                                .font(AppFonts.caption)
+                                .underline()
+                                .foregroundStyle(AppColors.purple)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                }
             }
         }
         .alert("用户隐私政策", isPresented: $isShowingPrivacyPolicy) {
@@ -82,12 +93,8 @@ public struct OnboardingIntroView: View {
         }
     }
 
-    @ViewBuilder
-    private func header() -> some View {
-        Image("fortune_wheel_small")
-            .resizable()
-            .scaledToFit()
-            .frame(width: 72, height: 72)
-            .padding(.top, 24)
-    }
+}
+
+#Preview {
+    OnboardingIntroView(state: OnboardingState(), onStart: {})
 }
