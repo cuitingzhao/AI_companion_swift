@@ -4,20 +4,28 @@
 AICompanion/
 |-- AICompanion/
 |   |-- AICompanionApp.swift (app entry point)
+|   |-- SpeechRecognizer.swift
 |   |-- Models/
 |   |   |-- City.swift
 |   |   |-- Bazi.swift
 |   |   |-- PersonalityTrait.swift
+|   |   |-- OnboardingModels.swift
+|   |   |-- ProfileModels.swift
 |   |-- DesignSystem/
 |   |   |-- Colors.swift
 |   |   |-- Fonts.swift
 |   |   |-- Components/
 |   |       |-- PrimaryButton.swift
 |   |       |-- AppTextField.swift
+|   |       |-- VoiceInputButton.swift
 |   |
 |   |-- Networking/
 |   |   |-- CitiesAPI.swift
 |   |   |-- OnboardingAPI.swift
+|   |   |-- ProfileAPI.swift
+|   |
+|   |-- Services/
+|   |   |-- LocationService.swift
 |   |
 |   |-- Onboarding/
 |   |   |-- OnboardingState.swift
@@ -30,6 +38,8 @@ AICompanion/
 |   |   |-- BaziAnalysisResultView.swift
 |   |   |-- KYCIntroView.swift
 |   |   |-- KYCPersonalityReviewView.swift
+|   |   |-- KYCChatView.swift
+|   |   |-- KYCEndView.swift
 |   |   |-- Components/
 |   |       |-- GenderChip.swift
 |   |       |-- CitySearchField.swift
