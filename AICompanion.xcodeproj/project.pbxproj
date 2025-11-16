@@ -256,6 +256,9 @@
 				DEVELOPMENT_TEAM = VCBXL7D47G;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "需要访问你的位置信息来获取当前所在城市，用于完善个人档案和KYC信息收集。";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "需要访问麦克风来采集你的语音内容，用于语音输入和KYC信息收集。";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "需要使用语音识别来将你的语音内容转换为文字，用于与你的五行伙伴聊天和收集KYC信息。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -287,6 +290,8 @@
 				DEVELOPMENT_TEAM = VCBXL7D47G;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "需要访问麦克风来采集你的语音内容，用于语音输入和KYC信息收集。";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "需要使用语音识别来将你的语音内容转换为文字，用于与你的五行伙伴聊天和收集KYC信息。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

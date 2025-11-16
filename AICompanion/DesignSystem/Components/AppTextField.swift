@@ -4,15 +4,21 @@ public struct AppTextField<Accessory: View>: View {
     private let title: String
     private let text: Binding<String>
     private let accessory: Accessory
+    private let submitLabel: SubmitLabel?
+    private let onSubmit: (() -> Void)?
 
     public init(
         _ title: String,
         text: Binding<String>,
+        submitLabel: SubmitLabel? = nil,
+        onSubmit: (() -> Void)? = nil,
         @ViewBuilder accessory: () -> Accessory = { EmptyView() }
     ) {
         self.title = title
         self.text = text
         self.accessory = accessory()
+        self.submitLabel = submitLabel
+        self.onSubmit = onSubmit
     }
 
     public var body: some View {
@@ -24,6 +30,10 @@ public struct AppTextField<Accessory: View>: View {
                     Text(title)
                         .foregroundStyle(AppColors.neutralGray)
                         .font(AppFonts.small)
+                }
+                .submitLabel(submitLabel ?? .done)
+                .onSubmit {
+                    onSubmit?()
                 }
 
             accessory

@@ -84,7 +84,7 @@ public struct KYCPersonalityReviewView: View {
                 print("🚀 Submitting feedback...")
                 let response = try await OnboardingAPI.shared.submitFeedback(request)
                 print("✅ Feedback submitted successfully:", response.message)
-                // TODO: Navigate to next step
+                state.currentStep = .kycChat
             } catch {
                 print("❌ Feedback submission error:", error)
             }

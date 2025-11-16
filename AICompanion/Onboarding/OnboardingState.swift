@@ -11,6 +11,8 @@ public final class OnboardingState: ObservableObject {
         case baziResult
         case kycIntro
         case kycPersonality
+        case kycChat
+        case kycEnd
     }
 
     public enum Gender: String, CaseIterable, Codable {

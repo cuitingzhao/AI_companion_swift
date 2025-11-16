@@ -50,7 +50,6 @@ public struct OnboardingScaffold<Header: View, Content: View>: View {
                 .frame(width: containerWidth)
                 .padding(.bottom, 28)
             }
-            .ignoresSafeArea(.keyboard)
         }
     }
 }

@@ -45,6 +45,10 @@ struct AICompanionApp: App {
                     }
                 case .kycPersonality:
                     KYCPersonalityReviewView(state: onboardingState)
+                case .kycChat:
+                    KYCChatView(state: onboardingState)
+                case .kycEnd:
+                    KYCEndView(state: onboardingState)
                 }
             }
             .animation(.spring(response: 0.7, dampingFraction: 0.85), value: onboardingState.currentStep)
