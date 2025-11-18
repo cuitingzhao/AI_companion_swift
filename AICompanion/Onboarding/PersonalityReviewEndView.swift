@@ -1,62 +1,43 @@
 import SwiftUI
 
-public struct KYCEndView: View {
+public struct PersonalityReviewEndView: View {
     @ObservedObject private var state: OnboardingState
-    private let onConfirm: () -> Void
-    private let onSkip: () -> Void
+    @State private var displayedText1: String = ""
+    @State private var displayedText2: String = ""
+    @State private var isTypingFirst: Bool = false
+    @State private var isTypingSecond: Bool = false
+    @State private var isShowingSkipDialog: Bool = false
 
-    @State private var displayedIntro: String = ""
-    @State private var displayedGoal: String = ""
-    @State private var isTypingIntro: Bool = false
-    @State private var isTypingGoal: Bool = false
-
-    public init(
-        state: OnboardingState,
-        onConfirm: @escaping () -> Void = {},
-        onSkip: @escaping () -> Void = {}
-    ) {
+    public init(state: OnboardingState) {
         self.state = state
-        self.onConfirm = onConfirm
-        self.onSkip = onSkip
-    }
-
-    private var nickname: String {
-        state.nickname
-    }
-
-    private var introText: String {
-        switch state.kycEndMode {
-        case .defaultGoal:
-            return "\(nickname)，我已经对你有了初步的了解。"
-        case .skippedIcebreaking:
-            return "哎呀你跳过了破冰环节，那就让我们之后慢慢地相互了解吧。"
-        }
-    }
-
-    private var goalText: String {
-        "请告诉我，你有什么近期或者长期的目标吗？我会根据你的目标，制定日常生活中的小任务，帮你实现目标。比如“克服拖延”，“找一份 AI 相关的工作”，“在职场更有竞争力”等等。如果目标不够实际，比如“中彩票”， 我会拒绝的哦。"
     }
 
     private func startTyping() {
-        guard !isTypingIntro && !isTypingGoal else { return }
+        guard !isTypingFirst && !isTypingSecond else { return }
 
-        displayedIntro = ""
-        displayedGoal = ""
+        displayedText1 = ""
+        displayedText2 = ""
 
-        let fullIntro = introText
-        let fullGoal = goalText
+        let fullText1: String
+        switch state.personalityEndSource {
+        case .fromFeedback:
+            fullText1 = "不错哦，我现在已经大致对你的性格有了一个了解。"
+        case .skip:
+            fullText1 = "好的，那就让我在聊天中慢慢了解你的性格"
+        }
+        let fullText2 = "除了陪伴，我的另一个使命是帮你完成一个又一个小目标，成为你想成为的自己。所以我想了解一下你的基本状况，你同意吗？"
 
-        isTypingIntro = true
-        type(text: fullIntro, intoIntro: true) {
-            isTypingIntro = false
-            isTypingGoal = true
-            type(text: fullGoal, intoIntro: false) {
-                isTypingGoal = false
+        isTypingFirst = true
+        type(text: fullText1, intoFirst: true) {
+            isTypingFirst = false
+            isTypingSecond = true
+            type(text: fullText2, intoFirst: false) {
+                isTypingSecond = false
             }
         }
     }
 
-    private func type(text: String, intoIntro: Bool, completion: @escaping () -> Void) {
+    private func type(text: String, intoFirst: Bool, completion: @escaping () -> Void) {
         let characters = Array(text)
 
         func step(_ index: Int) {
@@ -66,10 +47,10 @@ public struct KYCEndView: View {
             }
 
             let char = characters[index]
-            if intoIntro {
-                displayedIntro.append(char)
+            if intoFirst {
+                displayedText1.append(char)
             } else {
-                displayedGoal.append(char)
+                displayedText2.append(char)
             }
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
@@ -86,9 +67,9 @@ public struct KYCEndView: View {
                 Spacer()
 
                 VStack(alignment: .leading, spacing: 16) {
-                    if !displayedIntro.isEmpty || isTypingIntro {
+                    if !displayedText1.isEmpty || isTypingFirst {
                         HStack(alignment: .top) {
-                            Text(displayedIntro)
+                            Text(displayedText1)
                                 .font(AppFonts.body)
                                 .foregroundStyle(AppColors.textBlack)
                                 .padding(.horizontal, 16)
@@ -100,9 +81,9 @@ public struct KYCEndView: View {
                         }
                     }
 
-                    if !displayedGoal.isEmpty || isTypingGoal {
+                    if !displayedText2.isEmpty || isTypingSecond {
                         HStack(alignment: .top) {
-                            Text(displayedGoal)
+                            Text(displayedText2)
                                 .font(AppFonts.body)
                                 .foregroundStyle(AppColors.textBlack)
                                 .padding(.horizontal, 16)
@@ -120,7 +101,9 @@ public struct KYCEndView: View {
 
                 VStack(spacing: 12) {
                     PrimaryButton(
-                        action: onConfirm,
+                        action: {
+                            state.currentStep = .kycChat
+                        },
                         style: .init(variant: .filled, verticalPadding: 12)
                     ) {
                         Text("确认")
@@ -128,23 +111,36 @@ public struct KYCEndView: View {
                     }
 
                     PrimaryButton(
-                        action: onSkip,
+                        action: { isShowingSkipDialog = true },
                         style: .init(variant: .outlined, verticalPadding: 12)
                     ) {
                         Text("跳过")
                             .foregroundStyle(AppColors.purple)
                     }
                 }
+                .padding(.bottom, 40)
             }
         }
         .onAppear {
             startTyping()
         }
+        .overlay(
+            AppDialog(
+                isPresented: $isShowingSkipDialog,
+                message: "对你基本情况的了解有助于我提供更恰当的建议，确定要跳过这个环节吗？",
+                primaryTitle: "确认",
+                primaryAction: {
+                    state.kycEndMode = .skippedIcebreaking
+                    state.currentStep = .kycEnd
+                },
+                secondaryTitle: "取消",
+                secondaryAction: {},
+                title: "确认跳过？"
+            )
+        )
     }
 }
 
 #Preview {
-    let state = OnboardingState()
-    state.nickname = "测试用户"
-    return KYCEndView(state: state)
+    PersonalityReviewEndView(state: OnboardingState())
 }

@@ -8,6 +8,7 @@ public struct VoiceInputButton: View {
 
     @Binding private var text: String
     @StateObject private var speechRecognizer = SpeechRecognizer()
+    @State private var isPressingLongPress: Bool = false
     private let style: Style
     private let onComplete: ((String) -> Void)?
 
@@ -62,9 +63,10 @@ public struct VoiceInputButton: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
             .padding(.horizontal, 12)
-            .background(AppColors.neutralGray.opacity(0.2))
+            .background((isPressingLongPress || speechRecognizer.isRecording) ? AppColors.neutralGray.opacity(0.35) : AppColors.neutralGray.opacity(0.2))
             .cornerRadius(14)
             .onLongPressGesture(minimumDuration: 0.01, maximumDistance: 50, pressing: { isPressing in
+                isPressingLongPress = isPressing
                 if isPressing {
                     startRecordingIfNeeded()
                 } else {

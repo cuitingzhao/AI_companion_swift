@@ -11,8 +11,11 @@ public final class OnboardingState: ObservableObject {
         case baziResult
         case kycIntro
         case kycPersonality
+        case kycPersonalityEnd
         case kycChat
         case kycEnd
+        case goalChat
+        case goalPlan
     }
 
     public enum Gender: String, CaseIterable, Codable {
@@ -39,12 +42,23 @@ public final class OnboardingState: ObservableObject {
     @Published public var isSubmittingOnboarding: Bool = false
     @Published public var submitError: String?
 
+    // Goal onboarding
+    @Published public var currentGoalId: Int?
+    @Published public var goalPlan: GoalPlanResponse?
+
     // KYC personality
     @Published public var personalityTraits: [PersonalityTrait] = []
     @Published public var currentPersonalityIndex: Int = 0
     @Published public var personalityTraitRatings: [Int: PersonalityAccuracy] = [:]
 
     public let nicknameMaxLength: Int = 12
+
+    public enum KYCEndMode {
+        case defaultGoal
+        case skippedIcebreaking
+    }
+
+    @Published public var kycEndMode: KYCEndMode = .defaultGoal
 
     public init() {
         // Default a reasonable past date
@@ -58,6 +72,13 @@ public final class OnboardingState: ObservableObject {
         case partiallyAccurate
         case veryAccurate
     }
+
+    public enum PersonalityEndSource {
+        case fromFeedback
+        case skip
+    }
+
+    @Published public var personalityEndSource: PersonalityEndSource = .fromFeedback
 
     public var latestAllowedDate: Date {
         let cal = Calendar.current

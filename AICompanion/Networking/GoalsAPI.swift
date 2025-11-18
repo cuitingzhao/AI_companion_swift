@@ -1,0 +1,91 @@
+import Foundation
+
+@MainActor
+public final class GoalsAPI {
+    public static let shared = GoalsAPI()
+    public let baseURL: URL
+
+    public init(baseURL: URL = URL(string: "http://localhost:8000")!) {
+        self.baseURL = baseURL
+    }
+
+    public func sendOnboardingMessage(_ request: GoalOnboardingMessageRequest) async throws -> GoalOnboardingMessageResponse {
+        var components = URLComponents()
+        components.scheme = baseURL.scheme
+        components.host = baseURL.host
+        components.port = baseURL.port
+        components.path = "/api/v1/goals/onboarding/message"
+
+        guard let url = components.url else {
+            throw OnboardingAPIError.invalidURL
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let encoder = JSONEncoder()
+        urlRequest.httpBody = try encoder.encode(request)
+
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw OnboardingAPIError.badResponse
+        }
+
+        let decoder = JSONDecoder()
+        return try decoder.decode(GoalOnboardingMessageResponse.self, from: data)
+    }
+
+    public func skipOnboarding(_ request: GoalOnboardingSkipRequest) async throws -> GoalOnboardingSkipResponse {
+        var components = URLComponents()
+        components.scheme = baseURL.scheme
+        components.host = baseURL.host
+        components.port = baseURL.port
+        components.path = "/api/v1/goals/onboarding/skip"
+
+        guard let url = components.url else {
+            throw OnboardingAPIError.invalidURL
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let encoder = JSONEncoder()
+        urlRequest.httpBody = try encoder.encode(request)
+
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw OnboardingAPIError.badResponse
+        }
+
+        let decoder = JSONDecoder()
+        return try decoder.decode(GoalOnboardingSkipResponse.self, from: data)
+    }
+
+    public func fetchGoalPlan(goalId: Int) async throws -> GoalPlanResponse {
+        var components = URLComponents()
+        components.scheme = baseURL.scheme
+        components.host = baseURL.host
+        components.port = baseURL.port
+        components.path = "/api/v1/goals/\(goalId)/plan"
+
+        guard let url = components.url else {
+            throw OnboardingAPIError.invalidURL
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "GET"
+
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw OnboardingAPIError.badResponse
+        }
+
+        let decoder = JSONDecoder()
+        return try decoder.decode(GoalPlanResponse.self, from: data)
+    }
+}

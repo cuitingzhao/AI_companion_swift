@@ -8,6 +8,7 @@ public struct KYCChatView: View {
     @State private var isSending: Bool = false
     @State private var errorText: String?
     @State private var inputMode: InputMode = .text
+    @State private var keyboardHeight: CGFloat = 0
 
     public init(state: OnboardingState) {
         self.state = state
@@ -71,7 +72,21 @@ public struct KYCChatView: View {
                 inputArea
             }
         }
+        .padding(.bottom, keyboardHeight)
+        .animation(.easeOut(duration: 0.25), value: keyboardHeight)
         .onAppear(perform: setupInitialMessage)
+        .onReceive(NotificationCenter.default.publisher(for: .keyboardWillShow)) { notification in
+            if let frameValue = notification.userInfo?[KeyboardNotificationKeys.frameEnd] as? NSValue {
+                keyboardHeight = frameValue.cgRectValue.height
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .keyboardWillHide)) { _ in
+            keyboardHeight = 0
+        }
+    }
+
+    private enum KeyboardNotificationKeys {
+        static let frameEnd = "UIKeyboardFrameEndUserInfoKey"
     }
 
     private func chatBubble(for message: Message) -> some View {
@@ -264,12 +279,19 @@ public struct KYCChatView: View {
             do {
                 let response = try await OnboardingAPI.shared.skip(request)
                 print("✅ KYC skipped:", response.message)
+                state.kycEndMode = .skippedIcebreaking
+                state.currentStep = .kycEnd
             } catch {
                 errorText = "跳过失败，请稍后重试。"
                 print("❌ KYC skip error:", error)
             }
         }
     }
+}
+
+private extension Notification.Name {
+    static let keyboardWillShow = Notification.Name("UIKeyboardWillShowNotification")
+    static let keyboardWillHide = Notification.Name("UIKeyboardWillHideNotification")
 }
 
 #Preview {

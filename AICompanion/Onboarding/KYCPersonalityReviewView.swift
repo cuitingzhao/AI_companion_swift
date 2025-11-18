@@ -2,6 +2,8 @@ import SwiftUI
 
 public struct KYCPersonalityReviewView: View {
     @ObservedObject private var state: OnboardingState
+    @State private var isSkipDialogPresented: Bool = false
+    @State private var traitComments: [Int: String] = [:]
 
     public init(state: OnboardingState) {
         self.state = state
@@ -43,6 +45,13 @@ public struct KYCPersonalityReviewView: View {
         isLastTrait ? "完成" : "继续"
     }
 
+    private func commentBinding(for traitId: Int) -> Binding<String> {
+        Binding(
+            get: { traitComments[traitId] ?? "" },
+            set: { traitComments[traitId] = $0 }
+        )
+    }
+
     private func setRating(_ rating: OnboardingState.PersonalityAccuracy) {
         guard let trait = currentTrait else { return }
         state.personalityTraitRatings[trait.id] = rating
@@ -74,7 +83,16 @@ public struct KYCPersonalityReviewView: View {
             case .veryAccurate:
                 feedbackFlag = "accurate"
             }
-            return TraitFeedback(traitId: traitId, feedbackFlag: feedbackFlag, comment: nil)
+            let rawComment = traitComments[traitId]?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let comment: String?
+            if accuracy == .veryAccurate {
+                comment = nil
+            } else if let text = rawComment, !text.isEmpty {
+                comment = text
+            } else {
+                comment = nil
+            }
+            return TraitFeedback(traitId: traitId, feedbackFlag: feedbackFlag, comment: comment)
         }
 
         let request = OnboardingFeedbackRequest(userId: userId, traitFeedbacks: traitFeedbacks)
@@ -84,7 +102,8 @@ public struct KYCPersonalityReviewView: View {
                 print("🚀 Submitting feedback...")
                 let response = try await OnboardingAPI.shared.submitFeedback(request)
                 print("✅ Feedback submitted successfully:", response.message)
-                state.currentStep = .kycChat
+                state.personalityEndSource = .fromFeedback
+                state.currentStep = .kycPersonalityEnd
             } catch {
                 print("❌ Feedback submission error:", error)
             }
@@ -92,23 +111,12 @@ public struct KYCPersonalityReviewView: View {
     }
 
     private func handleSkip() {
-        guard let userId = state.submitUserId else {
-            print("❌ No user ID available")
-            return
-        }
+        isSkipDialogPresented = true
+    }
 
-        let request = OnboardingSkipRequest(userId: userId)
-
-        Task {
-            do {
-                print("🚀 Skipping personality review...")
-                let response = try await OnboardingAPI.shared.skip(request)
-                print("✅ Skipped successfully:", response.message)
-                // TODO: Navigate to next step
-            } catch {
-                print("❌ Skip error:", error)
-            }
-        }
+    private func confirmSkip() {
+        state.personalityEndSource = .skip
+        state.currentStep = .kycPersonalityEnd
     }
 
     private func progressBar(progress: Double) -> some View {
@@ -196,7 +204,15 @@ public struct KYCPersonalityReviewView: View {
                 HStack(spacing: 12) {
                     optionButton(title: "不准", value: .notAccurate)
                     optionButton(title: "部分准", value: .partiallyAccurate)
-                    optionButton(title: "很准", value: .veryAccurate)
+                    optionButton(title: "准确", value: .veryAccurate)
+                }
+
+                if let trait = currentTrait,
+                   selectedRating == .notAccurate || selectedRating == .partiallyAccurate {
+                    AppTextField(
+                        "可以简单说明哪里不准（可选）",
+                        text: commentBinding(for: trait.id)
+                    )
                 }
 
                 Spacer()
@@ -210,6 +226,8 @@ public struct KYCPersonalityReviewView: View {
                         Text(primaryButtonTitle)
                             .foregroundStyle(.white)
                     }
+                    .disabled(selectedRating == nil)
+                    .opacity(selectedRating == nil ? 0.6 : 1)
 
                     PrimaryButton(
                         action: handleSkip,
@@ -221,6 +239,19 @@ public struct KYCPersonalityReviewView: View {
                 }
             }
         }
+        .overlay(
+            AppDialog(
+                isPresented: $isSkipDialogPresented,
+                message: "了解你的性格将有助于我为你提供更好的建议，确定跳过这个环节吗？",
+                primaryTitle: "确定",
+                primaryAction: {
+                    confirmSkip()
+                },
+                secondaryTitle: "取消",
+                secondaryAction: {},
+                title: "确认跳过？"
+            )
+        )
     }
 }
 
