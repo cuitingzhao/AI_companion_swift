@@ -123,7 +123,7 @@ public struct GoalOnboardingChatView: View {
         }
         .overlay(
             Group {
-                if isFetchingPlan {
+                if isFetchingPlan || isAutoContinuingPlanGeneration {
                     ZStack {
                         Color.black.opacity(0.25)
                             .ignoresSafeArea()
@@ -132,7 +132,7 @@ public struct GoalOnboardingChatView: View {
                             ProgressView()
                                 .tint(AppColors.purple)
 
-                            Text("正在制定计划详情")
+                            Text(isAutoContinuingPlanGeneration ? "正在根据目标创建计划，请稍候" : "正在制定计划详情")
                                 .font(AppFonts.body)
                                 .foregroundStyle(AppColors.textBlack)
                         }
