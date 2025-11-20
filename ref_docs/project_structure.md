@@ -4,6 +4,7 @@
 AICompanion/
 |-- AICompanion/
 |   |-- AICompanionApp.swift (app entry point)
+|   |-- TaskForTodayView.swift (daily task overview after onboarding)
 |   |-- SpeechRecognizer.swift
 |   |-- Models/
 |   |   |-- City.swift
@@ -11,6 +12,8 @@ AICompanion/
 |   |   |-- PersonalityTrait.swift
 |   |   |-- OnboardingModels.swift
 |   |   |-- ProfileModels.swift
+|   |   |-- GoalsModels.swift
+|   |   |-- CalendarModels.swift (calendar info for homepage header)
 |   |-- DesignSystem/
 |   |   |-- Colors.swift
 |   |   |-- Fonts.swift
@@ -18,11 +21,15 @@ AICompanion/
 |   |       |-- PrimaryButton.swift
 |   |       |-- AppTextField.swift
 |   |       |-- VoiceInputButton.swift
+|   |       |-- AppDialog.swift
 |   |
 |   |-- Networking/
 |   |   |-- CitiesAPI.swift
 |   |   |-- OnboardingAPI.swift
 |   |   |-- ProfileAPI.swift
+|   |   |-- GoalsAPI.swift
+|   |   |-- CalendarAPI.swift (GET /api/v1/utils/calendar/today)
+|   |   |-- ExecutionsAPI.swift (PATCH /api/v1/executions/{execution_id})
 |   |
 |   |-- Services/
 |   |   |-- LocationService.swift
@@ -38,14 +45,18 @@ AICompanion/
 |   |   |-- BaziAnalysisResultView.swift
 |   |   |-- KYCIntroView.swift
 |   |   |-- KYCPersonalityReviewView.swift
+|   |   |-- PersonalityReviewEndView.swift
 |   |   |-- KYCChatView.swift
 |   |   |-- KYCEndView.swift
+|   |   |-- GoalOnboardingChatView.swift
 |   |   |-- Components/
 |   |       |-- GenderChip.swift
 |   |       |-- CitySearchField.swift
+|   |       |-- ChatBubbleLoadingIndicator.swift
 |   |
 |   |-- Resources/
 |       |-- ... (shared images/assets, etc.)
+|   |-- HomeDailyTasksView.swift (homepage "每日任务" tab using calendar + today-plan + executions APIs)
 |
 |-- AICompanion.xcodeproj/
 |   |-- ... (Xcode project configuration)
@@ -62,4 +73,5 @@ AICompanion/
 |   |-- onboarding_prd.md
 |   |-- prd.md
 |   |-- project_structure.md (this file)
+|   |-- ui_text_suggestions.md (UI copy review and wording suggestions)
 ```

@@ -12,6 +12,7 @@ public enum AppColors {
     )
 
     public static let purple = Color(hex: "5E17EB")
+    public static let lavender: Color = Color(hex: "C7A4DF")
     public static let textBlack = Color(hex: "5C5C5C")
     public static let accentYellow = Color(hex: "F4CD0B")
     public static let accentGreen = Color(hex: "14CE75")
@@ -19,6 +20,7 @@ public enum AppColors {
     public static let accentRed = Color(hex: "FF5A5F")
     public static let accentBrown = Color(hex: "8B572A")
     public static let neutralGray = Color(hex: "A6A6A6")
+    public static let white = Color(hex: "FFFFFF")
 
     // Element colors
     public static let elementGold = accentYellow

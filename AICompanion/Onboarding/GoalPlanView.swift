@@ -21,7 +21,7 @@ public struct GoalPlanView: View {
                             goalHeader(plan: plan)
                             timelineCard(plan: plan)
                         } else {
-                            Text("暂时没有可展示的目标计划")
+                            Text("目标计划尚未生成")
                                 .font(AppFonts.body)
                                 .foregroundStyle(AppColors.neutralGray)
                         }
@@ -29,14 +29,27 @@ public struct GoalPlanView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
-                PrimaryButton(
-                    action: {
-                        print("✅ Goal plan confirmed")
-                    },
-                    style: .init(variant: .filled, verticalPadding: 12)
-                ) {
-                    Text("确定")
-                        .foregroundStyle(.white)
+                VStack(spacing: 12) {
+                    PrimaryButton(
+                        action: {
+                            print("✅ User chose to start tasks today")
+                            state.currentStep = .taskForToday
+                        },
+                        style: .init(variant: .filled, verticalPadding: 12)
+                    ) {
+                        Text("立即开始")
+                            .foregroundStyle(.white)
+                    }
+
+                    PrimaryButton(
+                        action: {
+                            print("ℹ️ User chose to start tasks tomorrow")
+                        },
+                        style: .init(variant: .outlined, verticalPadding: 12)
+                    ) {
+                        Text("明天再提醒我")
+                            .foregroundStyle(AppColors.purple)
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 8)
@@ -45,7 +58,7 @@ public struct GoalPlanView: View {
         .overlay(
             AppDialog(
                 isPresented: $isIntroDialogPresented,
-                message: "这是根据我们刚才的讨论为你制定的计划。请知晓这个计划会随着我们的谈话增多，我对你的了解增多而产生变化。我每天都会把计划里的部分任务插入到你的日程表里，你可以在任务主页查看。",
+                message: "这是为你制定的计划。随着我对你的了解加深，这个计划也会不断调整。我每天会从计划中挑选部分事项，你可以在每日待办页面查看。",
                 primaryTitle: "知道了",
                 primaryAction: {},
                 title: "目标计划说明"
@@ -93,22 +106,24 @@ public struct GoalPlanView: View {
     }
 
     private func milestoneTimelineRow(milestone: GoalPlanMilestone) -> some View {
-        let lineHeight = CGFloat(max(1, milestone.tasks.count)) * 52
-
-        return HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             VStack(spacing: 4) {
                 Image(systemName: "mappin.and.ellipse")
                     .font(.system(size: 14))
                     .foregroundStyle(AppColors.accentRed)
 
+                Spacer(minLength: 0)
+            }
+            .overlay(alignment: .top) {
                 Rectangle()
                     .fill(AppColors.neutralGray.opacity(0.4))
-                    .frame(width: 2, height: lineHeight)
+                    .frame(width: 2)
+                    .padding(.top, 18)
             }
 
             VStack(alignment: .leading, spacing: 8) {
                 Text(milestone.title)
-                    .font(AppFonts.body)
+                    .font(AppFonts.small)
                     .foregroundStyle(AppColors.textBlack)
 
                 ForEach(milestone.tasks, id: \.id) { task in
@@ -120,7 +135,7 @@ public struct GoalPlanView: View {
 
     private func taskCard(title: String) -> some View {
         Text(title)
-            .font(AppFonts.body)
+            .font(AppFonts.small)
             .foregroundStyle(AppColors.textBlack)
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)

@@ -29,7 +29,7 @@ public struct OnboardingProfileView: View {
                         .font(AppFonts.subtitle)
                         .foregroundStyle(AppColors.textBlack)
 
-                    Text("为了做一个合格的五行伙伴，我需要以下信息计算你的生辰八字")
+                    Text("为了做一个合格的五行伙伴，我需要以下信息来计算你的生辰八字。")
                         .font(AppFonts.small)
                         .foregroundStyle(AppColors.textBlack)
                         .fixedSize(horizontal: false, vertical: true)
@@ -130,7 +130,7 @@ public struct OnboardingProfileView: View {
         }
         .sheet(isPresented: $isShowingBirthDatePicker) {
             VStack(spacing: 24) {
-                Text("选择出生日期和时间")
+                Text("请选择你的出生日期和时间")
                     .font(AppFonts.subtitle)
                     .foregroundStyle(AppColors.textBlack)
                     .padding(.top, 16)

@@ -62,7 +62,7 @@ public struct PersonalityReviewEndView: View {
     }
 
     public var body: some View {
-        OnboardingScaffold(topSpacing: 60, header: { EmptyView() }) {
+        OnboardingScaffold(topSpacing: 60, containerColor: .clear, header: { EmptyView() }) {
             VStack(spacing: 24) {
                 Spacer()
 
@@ -106,7 +106,7 @@ public struct PersonalityReviewEndView: View {
                         },
                         style: .init(variant: .filled, verticalPadding: 12)
                     ) {
-                        Text("确认")
+                        Text("继续")
                             .foregroundStyle(.white)
                     }
 

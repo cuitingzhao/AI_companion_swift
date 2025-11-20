@@ -83,7 +83,21 @@ Conversational KYC step during onboarding.
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
 | `user_id` | integer | Yes | Existing user id from `/onboarding/submit`. |
-| `message` | string (1–1000 chars) | Yes | User’s free-text reply in the KYC conversation. |
+| `message` | string (1–1000 chars) | Yes | User’s current free-text reply in the KYC conversation. |
+| `history` | array of objects | No | Optional chat history maintained by the client, each item has `role` (`"user"` or `"assistant"`) and `content` (string). |
+
+Example:
+
+```json
+{
+  "user_id": 1,
+  "message": "我是学生",
+  "history": [
+    { "role": "assistant", "content": "嗨，Popo，我是你的AI陪伴助手Popo宝，方便先告诉我你现在所在的城市吗？" },
+    { "role": "user", "content": "我在上海" }
+  ]
+}
+```
 
 ### Response — [`KYCMessageResponse`](../app/schemas/kyc.py)
 | Field | Type | Description |
@@ -96,6 +110,49 @@ Conversational KYC step during onboarding.
 - `404 Not Found` – if the `user_id` cannot be resolved.
 - `500 Internal Server Error` – unexpected failures (`Internal server error: ...`).
 
+---
+
+## 6. POST `/api/v1/onboarding/message/location`
+**目前这个接口没有使用，因为如果相差太远的话可能会有误导性**
+Location-based KYC message to inform the AI of the user's current city using GPS coordinates.
+
+### Description
+- Accepts `user_id` and device GPS coordinates (`latitude`, `longitude`).
+- Uses backend city data (`cities.json`) to find the nearest city.
+- Sends a synthesized first-person message like `"我所在的城市为喀什地区（新疆）。"` into the KYC conversation.
+- Returns the usual KYC conversation response so the client can display the AI's reply.
+
+### Request Body — [`KYCLocationMessageRequest`](../app/schemas/kyc.py)
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `user_id` | integer | Yes | Existing user id from `/onboarding/submit`. |
+| `latitude` | float | Yes | GPS latitude from the client. |
+| `longitude` | float | Yes | GPS longitude from the client. |
+
+### Response — [`KYCMessageResponse`](../app/schemas/kyc.py)
+Same structure as `/api/v1/onboarding/message`:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `reply` | string | AI reply after receiving the synthesized city message. |
+| `collection_status` | string | Either `"进行中"` or `"完成"`. |
+| `kyc_completed` | boolean | Whether all required KYC info has been collected. |
+
+### Example
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/onboarding/message/location" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": 1,
+    "latitude": 37.785834,
+    "longitude": -122.406417
+  }'
+```
+
+### Errors
+- `404 Not Found` – if the `user_id` cannot be resolved or no city can be determined from the coordinates.
+- `500 Internal Server Error` – unexpected failures (`Internal server error: ...`).
 ---
 
 ## 4. POST `/api/v1/onboarding/skip`

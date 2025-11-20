@@ -26,7 +26,7 @@ public struct OnboardingIntroView: View {
                         .scaledToFit()
                         .frame(maxWidth: 280)
 
-                    Text("不只是陪伴\n还要帮你成为更好的自己")
+                    Text("不止是陪伴，\n也想帮你成为更好的自己")
                         .multilineTextAlignment(.center)
                         .font(AppFonts.body)
                         .foregroundStyle(AppColors.neutralGray)
@@ -53,7 +53,7 @@ public struct OnboardingIntroView: View {
                         }
                         .buttonStyle(.plain)
 
-                        Text("请接受")
+                        Text("请先阅读并同意")
                             .font(AppFonts.caption)
                             .foregroundStyle(AppColors.neutralGray)
 

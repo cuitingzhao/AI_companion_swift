@@ -4,6 +4,7 @@ public struct KYCPersonalityReviewView: View {
     @ObservedObject private var state: OnboardingState
     @State private var isSkipDialogPresented: Bool = false
     @State private var traitComments: [Int: String] = [:]
+    @State private var isSubmittingFeedback: Bool = false
 
     public init(state: OnboardingState) {
         self.state = state
@@ -97,6 +98,8 @@ public struct KYCPersonalityReviewView: View {
 
         let request = OnboardingFeedbackRequest(userId: userId, traitFeedbacks: traitFeedbacks)
 
+        isSubmittingFeedback = true
+
         Task {
             do {
                 print("🚀 Submitting feedback...")
@@ -107,6 +110,7 @@ public struct KYCPersonalityReviewView: View {
             } catch {
                 print("❌ Feedback submission error:", error)
             }
+            isSubmittingFeedback = false
         }
     }
 
@@ -175,7 +179,7 @@ public struct KYCPersonalityReviewView: View {
                     }
                 }
 
-                Text("以下推测准确吗？")
+                Text("这些性格描述准确吗？")
                     .font(AppFonts.large)
                     .foregroundStyle(AppColors.textBlack)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -194,7 +198,7 @@ public struct KYCPersonalityReviewView: View {
                     .cornerRadius(18)
                     .shadow(color: Color.black.opacity(0.04), radius: 10, x: 0, y: 4)
                 } else {
-                    Text("暂时没有可确认的性格描述")
+                    Text("暂时没有需要你确认的性格描述")
                         .font(AppFonts.body)
                         .foregroundStyle(AppColors.neutralGray)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -210,7 +214,7 @@ public struct KYCPersonalityReviewView: View {
                 if let trait = currentTrait,
                    selectedRating == .notAccurate || selectedRating == .partiallyAccurate {
                     AppTextField(
-                        "可以简单说明哪里不准（可选）",
+                        "如果觉得不准，可以简单说说哪里不太对（可选）",
                         text: commentBinding(for: trait.id)
                     )
                 }
@@ -240,9 +244,33 @@ public struct KYCPersonalityReviewView: View {
             }
         }
         .overlay(
+            Group {
+                if isSubmittingFeedback {
+                    ZStack {
+                        Color.black.opacity(0.25)
+                            .ignoresSafeArea()
+
+                        VStack(spacing: 12) {
+                            ProgressView()
+                                .tint(AppColors.purple)
+
+                            Text("正在提交，请稍候")
+                                .font(AppFonts.body)
+                                .foregroundStyle(AppColors.textBlack)
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 20)
+                        .background(Color.white)
+                        .cornerRadius(18)
+                        .shadow(color: Color.black.opacity(0.1), radius: 16, x: 0, y: 6)
+                    }
+                }
+            }
+        )
+        .overlay(
             AppDialog(
                 isPresented: $isSkipDialogPresented,
-                message: "了解你的性格将有助于我为你提供更好的建议，确定跳过这个环节吗？",
+                message: "了解你的性格能帮我给出更好的建议，确定要跳过这个环节吗？",
                 primaryTitle: "确定",
                 primaryAction: {
                     confirmSkip()

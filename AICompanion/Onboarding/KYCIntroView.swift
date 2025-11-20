@@ -138,7 +138,7 @@ public struct KYCIntroView: View {
                         },
                         style: .init(variant: .filled, verticalPadding: 12)
                     ) {
-                        Text("好的")
+                        Text("好的，开始吧")
                             .foregroundStyle(.white)
                     }
 
@@ -146,7 +146,7 @@ public struct KYCIntroView: View {
                         action: onSkip,
                         style: .init(variant: .outlined, verticalPadding: 12)
                     ) {
-                        Text("跳过")
+                        Text("暂时跳过")
                             .foregroundStyle(AppColors.purple)
                     }
                 }

@@ -130,3 +130,64 @@ public struct GoalPlanResponse: Codable {
         case milestones
     }
 }
+
+public struct DailyTaskItemResponse: Codable {
+    public let executionId: Int
+    public let taskId: Int
+    public let goalId: Int
+    public let goalTitle: String?
+    public let milestoneId: Int?
+    public let title: String
+    public let estimatedMinutes: Int?
+    public let priority: String
+    public let frequency: String
+    public let status: String
+    public let plannedDate: String
+    public let executionDate: String?
+
+    enum CodingKeys: String, CodingKey {
+        case executionId = "execution_id"
+        case taskId = "task_id"
+        case goalId = "goal_id"
+        case goalTitle = "goal_title"
+        case milestoneId = "milestone_id"
+        case title
+        case estimatedMinutes = "estimated_minutes"
+        case priority
+        case frequency
+        case status
+        case plannedDate = "planned_date"
+        case executionDate = "execution_date"
+    }
+}
+
+public struct DailyTaskPlanResponse: Codable {
+    public let date: String
+    public let items: [DailyTaskItemResponse]
+}
+
+public struct ExecutionUpdateRequest: Codable {
+    public let action: String
+    public let newDate: String?
+    public let actualMinutes: Int?
+    public let note: String?
+
+    enum CodingKeys: String, CodingKey {
+        case action
+        case newDate = "new_date"
+        case actualMinutes = "actual_minutes"
+        case note
+    }
+
+    public init(action: String, newDate: String? = nil, actualMinutes: Int? = nil, note: String? = nil) {
+        self.action = action
+        self.newDate = newDate
+        self.actualMinutes = actualMinutes
+        self.note = note
+    }
+}
+
+public struct ExecutionUpdateResponse: Codable {
+    public let status: String
+    public let message: String
+}

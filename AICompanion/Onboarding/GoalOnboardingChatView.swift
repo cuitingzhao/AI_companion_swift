@@ -12,7 +12,6 @@ public struct GoalOnboardingChatView: View {
     @State private var inputMode: InputMode = .text
     @State private var currentStage: Stage? = nil
     @State private var isFetchingPlan: Bool = false
-    @State private var loadingDotsStep: Int = 0
     @State private var hasAutoConfirmedSplitting: Bool = false
     @State private var isAutoContinuingPlanGeneration: Bool = false
 
@@ -78,7 +77,10 @@ public struct GoalOnboardingChatView: View {
 
                             if isSending {
                                 HStack {
-                                    bubbleLoadingIndicator()
+                                    ChatBubbleLoadingIndicator(
+                                        isActive: $isSending,
+                                        subtitle: isAutoContinuingPlanGeneration ? "正在根据目标创建计划，请稍候" : nil
+                                    )
                                     Spacer()
                                 }
                             }
@@ -182,39 +184,6 @@ public struct GoalOnboardingChatView: View {
             return "目标计划已生成"
         case .error:
             return "目标设定出错，请稍后重试"
-        }
-    }
-
-    private func bubbleLoadingIndicator() -> some View {
-        let dotsCount = (loadingDotsStep % 3) + 3 // cycles through 3,4,5 dots
-        let dots = String(repeating: ".", count: dotsCount)
-
-        return VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
-                ProgressView()
-                    .tint(AppColors.purple)
-
-                Text(dots)
-                    .font(AppFonts.caption)
-                    .foregroundStyle(AppColors.textBlack)
-            }
-
-            if isAutoContinuingPlanGeneration {
-                Text("正在根据目标创建计划，请稍候")
-                    .font(AppFonts.caption)
-                    .foregroundStyle(AppColors.textBlack)
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(Color.white)
-        .cornerRadius(18)
-        .onAppear {
-            loadingDotsStep = 0
-        }
-        .onReceive(Timer.publish(every: 0.4, on: .main, in: .common).autoconnect()) { _ in
-            guard isSending else { return }
-            loadingDotsStep += 1
         }
     }
 
@@ -368,7 +337,7 @@ public struct GoalOnboardingChatView: View {
                     }
                 }
             } catch {
-                errorText = "发送失败，请稍后重试。"
+                errorText = "消息发送失败，请检查网络后稍后再试。"
                 print("❌ Goal onboarding message error:", error)
             }
             if !isAutoContinuingPlanGeneration {
@@ -423,7 +392,7 @@ public struct GoalOnboardingChatView: View {
                     }
                 }
             } catch {
-                errorText = "生成目标计划时出错，请稍后重试。"
+                errorText = "生成目标计划时出了点问题，请稍后再试。"
                 print("❌ Goal onboarding auto-confirm error:", error)
             }
 
@@ -479,7 +448,7 @@ public struct GoalOnboardingChatView: View {
                 print("ℹ️ Goal plan is empty or has no tasks, staying in chat.")
             }
         } catch {
-            errorText = "获取目标计划失败，请稍后重试。"
+            errorText = "暂时无法获取目标计划，请稍后再试。"
             print("❌ Fetch goal plan error:", error)
         }
 

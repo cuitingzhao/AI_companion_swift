@@ -88,4 +88,28 @@ public final class GoalsAPI {
         let decoder = JSONDecoder()
         return try decoder.decode(GoalPlanResponse.self, from: data)
     }
+
+    public func fetchTodayPlan(userId: Int) async throws -> DailyTaskPlanResponse {
+        var components = URLComponents()
+        components.scheme = baseURL.scheme
+        components.host = baseURL.host
+        components.port = baseURL.port
+        components.path = "/api/v1/users/\(userId)/today-plan"
+
+        guard let url = components.url else {
+            throw OnboardingAPIError.invalidURL
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "GET"
+
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw OnboardingAPIError.badResponse
+        }
+
+        let decoder = JSONDecoder()
+        return try decoder.decode(DailyTaskPlanResponse.self, from: data)
+    }
 }

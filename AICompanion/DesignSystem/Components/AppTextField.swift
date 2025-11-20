@@ -23,7 +23,7 @@ public struct AppTextField<Accessory: View>: View {
 
     public var body: some View {
         HStack(spacing: 12) {
-            TextField(title, text: text)
+            TextField("", text: text)
                 .font(AppFonts.small)
                 .foregroundStyle(AppColors.textBlack)
                 .placeholder(when: text.wrappedValue.isEmpty) {

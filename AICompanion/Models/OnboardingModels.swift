@@ -92,17 +92,23 @@ public struct OnboardingSkipResponse: Codable {
 // MARK: - KYC Message
 
 public struct KYCChatMessage: Codable {
-    public enum Sender: String, Codable {
+    /// Backend expects: { "role": "user"|"assistant", "content": "..." }
+    public enum Role: String, Codable {
         case user
-        case ai
+        case assistant
     }
 
-    public let sender: Sender
-    public let text: String
+    public let role: Role
+    public let content: String
 
-    public init(sender: Sender, text: String) {
-        self.sender = sender
-        self.text = text
+    enum CodingKeys: String, CodingKey {
+        case role
+        case content
+    }
+
+    public init(role: Role, content: String) {
+        self.role = role
+        self.content = content
     }
 }
 

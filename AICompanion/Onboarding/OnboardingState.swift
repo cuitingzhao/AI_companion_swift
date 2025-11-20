@@ -3,7 +3,14 @@ import SwiftUI
 import Combine
 
 public final class OnboardingState: ObservableObject {
-    public enum Step {
+    enum StorageKeys {
+        static let userId = "onboarding.userId"
+        static let nickname = "onboarding.nickname"
+        static let completed = "onboarding.completed"
+        static let step = "onboarding.step"
+    }
+
+    public enum Step: String {
         case intro
         case nickname
         case profile
@@ -16,6 +23,8 @@ public final class OnboardingState: ObservableObject {
         case kycEnd
         case goalChat
         case goalPlan
+        case taskForToday
+        case home
     }
 
     public enum Gender: String, CaseIterable, Codable {
@@ -23,7 +32,11 @@ public final class OnboardingState: ObservableObject {
         case male
     }
 
-    @Published public var currentStep: Step = .intro
+    @Published public var currentStep: Step = .intro {
+        didSet {
+            persistCurrentStep()
+        }
+    }
 
     // Page 1
     @Published public var acceptedTerms: Bool = false
@@ -65,6 +78,29 @@ public final class OnboardingState: ObservableObject {
         var comps = DateComponents()
         comps.year = 1990; comps.month = 1; comps.day = 1; comps.hour = 0; comps.minute = 0
         self.birthDate = Calendar.current.date(from: comps) ?? Date(timeIntervalSince1970: 0)
+        restorePersistedOnboardingIfAvailable()
+    }
+
+    private func restorePersistedOnboardingIfAvailable() {
+        let defaults = UserDefaults.standard
+        let savedUserId = defaults.integer(forKey: StorageKeys.userId)
+        guard savedUserId > 0 else { return }
+
+        submitUserId = savedUserId
+
+        if let savedNickname = defaults.string(forKey: StorageKeys.nickname), !savedNickname.isEmpty {
+            nickname = savedNickname
+        }
+
+        // Prefer restoring the last explicit step if available
+        if let savedStepRaw = defaults.string(forKey: StorageKeys.step),
+           let savedStep = Step(rawValue: savedStepRaw) {
+            currentStep = savedStep
+        } else if defaults.bool(forKey: StorageKeys.completed) {
+            // Backwards compatibility: older版本只存了 completed，
+            // 对这类老数据，我们直接送用户回首页，而不是重新进入目标引导。
+            currentStep = .home
+        }
     }
 
     public enum PersonalityAccuracy: String, Codable {
@@ -134,6 +170,8 @@ public final class OnboardingState: ObservableObject {
             lastSubmitResponse = response
             submitUserId = response.userId
 
+            persistOnboardingUser()
+
             // Initialize KYC personality data
             personalityTraits = response.personalityTraits ?? []
             currentPersonalityIndex = 0
@@ -146,6 +184,18 @@ public final class OnboardingState: ObservableObject {
 
         isSubmittingOnboarding = false
         print("🔵 submitOnboarding() completed")
+    }
+
+    private func persistOnboardingUser() {
+        guard let userId = submitUserId else { return }
+        let defaults = UserDefaults.standard
+        defaults.set(userId, forKey: StorageKeys.userId)
+        defaults.set(nickname, forKey: StorageKeys.nickname)
+    }
+
+    private func persistCurrentStep() {
+        let defaults = UserDefaults.standard
+        defaults.set(currentStep.rawValue, forKey: StorageKeys.step)
     }
 
     public var isNicknameValid: Bool {

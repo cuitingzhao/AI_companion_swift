@@ -54,6 +54,7 @@ struct AICompanionApp: App {
                         state: onboardingState,
                         onConfirm: {
                             print("🟣 Navigating from kycEnd to goalChat")
+                            UserDefaults.standard.set(true, forKey: OnboardingState.StorageKeys.completed)
                             onboardingState.currentStep = .goalChat
                         }
                     )
@@ -61,6 +62,16 @@ struct AICompanionApp: App {
                     GoalOnboardingChatView(state: onboardingState)
                 case .goalPlan:
                     GoalPlanView(state: onboardingState)
+                case .taskForToday:
+                    TaskForTodayView(
+                        userId: onboardingState.submitUserId,
+                        onStart: {
+                            print("🟣 Navigating from TaskForTodayView to home")
+                            onboardingState.currentStep = .home
+                        }
+                    )
+                case .home:
+                    HomeDailyTasksView(userId: onboardingState.submitUserId)
                 }
             }
             .animation(.spring(response: 0.7, dampingFraction: 0.85), value: onboardingState.currentStep)

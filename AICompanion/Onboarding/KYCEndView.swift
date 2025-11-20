@@ -29,12 +29,12 @@ public struct KYCEndView: View {
         case .defaultGoal:
             return "\(nickname)，我已经对你有了初步的了解。"
         case .skippedIcebreaking:
-            return "哎呀你跳过了破冰环节，那就让我们之后慢慢地相互了解吧。"
+            return "哎呀，你跳过了破冰环节，那就让我们之后慢慢地相互了解吧。"
         }
     }
 
     private var goalText: String {
-        "请告诉我，你有什么近期或者长期的目标吗？我会根据你的目标，制定日常生活中的小任务，帮你实现目标。比如“克服拖延”，“找一份 AI 相关的工作”，“在职场更有竞争力”等等。如果目标不够实际，比如“中彩票”， 我会拒绝的哦。"
+        "有什么近期或者长期的个人成长目标吗？我会根据你的目标制定日常生活中的小任务，帮你实现这些目标。比如“克服拖延”，“换工作”，“减肥”等等。但是类似“中彩票”之类和个人成长无关的目标，我也没办法帮忙哦🤷‍♀️"
     }
 
     private func startTyping() {
@@ -81,7 +81,7 @@ public struct KYCEndView: View {
     }
 
     public var body: some View {
-        OnboardingScaffold(topSpacing: 60, header: { EmptyView() }) {
+        OnboardingScaffold(topSpacing: 60, containerColor: .clear, header: { EmptyView() }) {
             VStack(spacing: 24) {
                 Spacer()
 
@@ -123,7 +123,7 @@ public struct KYCEndView: View {
                         action: onConfirm,
                         style: .init(variant: .filled, verticalPadding: 12)
                     ) {
-                        Text("确认")
+                        Text("继续")
                             .foregroundStyle(.white)
                     }
 
@@ -131,7 +131,7 @@ public struct KYCEndView: View {
                         action: onSkip,
                         style: .init(variant: .outlined, verticalPadding: 12)
                     ) {
-                        Text("跳过")
+                        Text("暂时跳过")
                             .foregroundStyle(AppColors.purple)
                     }
                 }

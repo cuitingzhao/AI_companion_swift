@@ -1,10 +1,12 @@
 import SwiftUI
+import Combine
 
 public struct OnboardingLoadingView: View {
     @ObservedObject private var state: OnboardingState
     private let wheelNamespace: Namespace.ID?
     @State private var isSpinning = false
     @State private var hasSubmitted = false
+    @State private var wavePhase: Double = 0
 
     public init(state: OnboardingState, wheelNamespace: Namespace.ID? = nil) {
         self.state = state
@@ -43,11 +45,20 @@ public struct OnboardingLoadingView: View {
                 .animation(.linear(duration: 1.2).repeatForever(autoreverses: false), value: isSpinning)
 
                 Spacer()
-
-                Text("为你计算生辰八字中…")
-                    .font(AppFonts.small)
-                    .foregroundStyle(AppColors.neutralGray)
-                    .padding(.bottom, 40)
+                HStack(spacing: 0) {
+                    let characters = Array("为你计算生辰八字中")
+                    ForEach(characters.indices, id: \.self) { index in
+                        let char = String(characters[index])
+                        Text(char)
+                            .baselineOffset(sin(wavePhase + Double(index) * 0.6) * 4)
+                    }
+                }
+                .font(AppFonts.small)
+                .foregroundStyle(AppColors.neutralGray)
+                .padding(.bottom, 40)
+                .onReceive(Timer.publish(every: 0.06, on: .main, in: .common).autoconnect()) { _ in
+                    wavePhase += 0.25
+                }
             }
         }
         .onAppear {

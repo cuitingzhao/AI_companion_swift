@@ -50,6 +50,13 @@ public struct KYCChatView: View {
                                 chatBubble(for: message)
                                     .id(message.id)
                             }
+
+                            if isSending {
+                                HStack {
+                                    ChatBubbleLoadingIndicator(isActive: $isSending)
+                                    Spacer()
+                                }
+                            }
                         }
                         .padding(.vertical, 8)
                     }
@@ -58,6 +65,12 @@ public struct KYCChatView: View {
                             withAnimation {
                                 proxy.scrollTo(lastId, anchor: .bottom)
                             }
+                        }
+                    }
+                    .onChange(of: isSending) { sending in
+                        guard sending, let lastId = messages.last?.id else { return }
+                        withAnimation {
+                            proxy.scrollTo(lastId, anchor: .bottom)
                         }
                     }
                 }
@@ -243,8 +256,8 @@ public struct KYCChatView: View {
         errorText = nil
 
         let history: [KYCChatMessage] = messages.map { message in
-            let sender: KYCChatMessage.Sender = (message.sender == .user) ? .user : .ai
-            return KYCChatMessage(sender: sender, text: message.text)
+            let role: KYCChatMessage.Role = (message.sender == .user) ? .user : .assistant
+            return KYCChatMessage(role: role, content: message.text)
         }
 
         let request = KYCMessageRequest(userId: userId, message: trimmed, history: history)
