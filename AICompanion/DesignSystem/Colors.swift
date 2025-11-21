@@ -11,6 +11,16 @@ public enum AppColors {
         endRadius: 400
     )
 
+    public static let fortunePurpleGradient = RadialGradient(
+        gradient: Gradient(colors: [            
+            AppColors.purple.opacity(0.8),
+            AppColors.purple
+        ]),
+        center: .center,
+        startRadius: 0,
+        endRadius: 280
+    )
+
     public static let purple = Color(hex: "5E17EB")
     public static let lavender: Color = Color(hex: "C7A4DF")
     public static let textBlack = Color(hex: "5C5C5C")
@@ -20,7 +30,10 @@ public enum AppColors {
     public static let accentRed = Color(hex: "FF5A5F")
     public static let accentBrown = Color(hex: "8B572A")
     public static let neutralGray = Color(hex: "A6A6A6")
+    public static let jade = Color(hex: "ACCFC3")
     public static let white = Color(hex: "FFFFFF")
+    public static let gold = Color(hex: "F1A522")
+    public static let lightRed = Color(hex: "F9E3E0")
 
     // Element colors
     public static let elementGold = accentYellow

@@ -71,7 +71,9 @@ struct AICompanionApp: App {
                         }
                     )
                 case .home:
-                    HomeDailyTasksView(userId: onboardingState.submitUserId)
+                    HomeDailyTasksView(
+                        userId: onboardingState.submitUserId
+                    )
                 }
             }
             .animation(.spring(response: 0.7, dampingFraction: 0.85), value: onboardingState.currentStep)

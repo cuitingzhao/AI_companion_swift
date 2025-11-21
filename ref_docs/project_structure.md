@@ -14,6 +14,7 @@ AICompanion/
 |   |   |-- ProfileModels.swift
 |   |   |-- GoalsModels.swift
 |   |   |-- CalendarModels.swift (calendar info for homepage header)
+|   |   |-- FortuneModels.swift (daily fortune response models)
 |   |-- DesignSystem/
 |   |   |-- Colors.swift
 |   |   |-- Fonts.swift
@@ -29,6 +30,7 @@ AICompanion/
 |   |   |-- ProfileAPI.swift
 |   |   |-- GoalsAPI.swift
 |   |   |-- CalendarAPI.swift (GET /api/v1/utils/calendar/today)
+|   |   |-- FortuneAPI.swift (GET /api/v1/fortune/daily)
 |   |   |-- ExecutionsAPI.swift (PATCH /api/v1/executions/{execution_id})
 |   |
 |   |-- Services/
@@ -56,7 +58,17 @@ AICompanion/
 |   |
 |   |-- Resources/
 |       |-- ... (shared images/assets, etc.)
-|   |-- HomeDailyTasksView.swift (homepage "每日任务" tab using calendar + today-plan + executions APIs)
+|   |-- Home/
+|   |   |-- HomeDailyTasksViewModel.swift (view model for home tabs: daily tasks, goals, fortune)
+|   |   |-- DailyTasks/
+|   |   |   |-- DailyTasksPageView.swift (page body for "每日待办" tab)
+|   |   |-- GoalTracking/
+|   |   |   |-- GoalTrackingPageView.swift (page body for "目标追踪" tab)
+|   |   |-- GoalTrackingSectionView.swift (goal tracking tab UI)
+|   |   |-- DailyTasksSectionView.swift (daily tasks list and empty state)
+|   |   |-- DailyFortuneCardView.swift (overlay card for fortune details)
+|   |   |-- TaskExecutionCardView.swift (modal card for executing a single task)
+|   |-- HomeDailyTasksView.swift (homepage shell with tabs for daily tasks, goals, etc.)
 |
 |-- AICompanion.xcodeproj/
 |   |-- ... (Xcode project configuration)

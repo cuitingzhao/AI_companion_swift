@@ -131,6 +131,16 @@ public struct GoalPlanResponse: Codable {
     }
 }
 
+public struct UserGoalsPlansResponse: Codable {
+    public let userId: Int
+    public let goals: [GoalPlanResponse]
+
+    enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
+        case goals
+    }
+}
+
 public struct DailyTaskItemResponse: Codable {
     public let executionId: Int
     public let taskId: Int

@@ -204,3 +204,139 @@ Task fields:
 ### Errors
 - `404 Not Found` – goal id does not exist.
 - `500 Internal Server Error` – unexpected failures (`Internal server error: ...`).
+
+---
+
+## 5. GET `/api/v1/goals/user/{user_id}/plans`
+Retrieve **all goals** for a user, each with its full plan (milestones + tasks).
+
+### Description
+- Uses `GoalService.get_user_goals_with_plans` to:
+  - Load all `Goal` records for the user.
+  - For each goal, reuse `get_goal_plan` to build a `GoalPlanResponse`-compatible structure.
+- Intended for clients to render a **goal overview page** showing:
+  - Each goal.
+  - Each milestone under the goal.
+  - Each task under the milestone.
+  - Key dates (`start_date`, `due_date`, `due_at`) and priorities for milestones and tasks.
+
+### Path Parameters
+| Name | Type | Description |
+| --- | --- | --- |
+| `user_id` | integer | Target user id. |
+
+### Response — [`UserGoalsPlansResponse`](../app/schemas/goal.py)
+```json
+{
+  "user_id": 7,
+  "goals": [
+    {
+      "goal_id": 12,
+      "title": "三个月减脂5公斤",
+      "desc": "在三个月内减脂5公斤，通过控制饮食和每周锻炼来实现。",
+      "due_date": "2025-03-31",
+      "daily_minutes": 60,
+      "motivation": "改善健康、提升体型和精力状态。",
+      "constraints": "工作日晚上时间有限，周末相对自由。",
+      "progress": 20,
+      "status": "active",
+      "milestones": [
+        {
+          "id": 101,
+          "title": "第一个月减脂 1.5 公斤",
+          "desc": "通过控制饮食和规律运动，先实现初步的减脂目标。",
+          "start_date": "2025-01-01",
+          "due_date": "2025-01-31",
+          "priority": "high",
+          "status": "active",
+          "tasks": [
+            {
+              "id": 1001,
+              "title": "每周 3 次有氧运动（30 分钟）",
+              "desc": null,
+              "due_at": null,
+              "estimated_minutes": 30,
+              "frequency": "weekly",
+              "status": "pending",
+              "priority": "medium"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+Field descriptions reuse the same definitions as **Section 4: GET `/api/v1/goals/{goal_id}/plan`**.
+
+### Errors
+- `500 Internal Server Error` – unexpected failures (`Internal server error: ...`).
+
+---
+
+## 6. PATCH `/api/v1/goals/milestones/{milestone_id}`
+Update the status of a single milestone (e.g. mark as completed).
+
+### Description
+- Uses `GoalService.update_milestone_status` to update a `Milestone` row.
+- Supports three actions via the request body:
+  - `"complete"` – mark milestone as completed and set `completed_at`.
+  - `"expire"` – mark milestone as expired, clear `completed_at`.
+  - `"reopen"` – reopen a milestone as active, clear `completed_at`.
+- Designed primarily for UI controls like “我完成了这个阶段目标”.
+
+### Path Parameters
+| Name | Type | Description |
+| --- | --- | --- |
+| `milestone_id` | integer | ID of the milestone to update. |
+
+### Request Body — [`MilestoneUpdateRequest`](../app/schemas/goal.py)
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `action` | string | Yes | One of: `"complete"`, `"expire"`, `"reopen"`. |
+
+### Response — [`MilestoneUpdateResponse`](../app/schemas/goal.py)
+```json
+{
+  "status": "success",
+  "message": "Milestone marked as completed."
+}
+```
+
+### Example Requests
+
+#### Mark milestone as completed
+```bash
+curl -X PATCH "http://localhost:8000/api/v1/goals/milestones/101" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "action": "complete"
+  }'
+```
+
+#### Mark milestone as expired
+```bash
+curl -X PATCH "http://localhost:8000/api/v1/goals/milestones/101" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "action": "expire"
+  }'
+```
+
+#### Reopen a milestone as active
+```bash
+curl -X PATCH "http://localhost:8000/api/v1/goals/milestones/101" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "action": "reopen"
+  }'
+```
+
+### Errors
+- `400 Bad Request`
+  - Invalid `action` (not one of `complete|expire|reopen`).
+- `404 Not Found`
+  - `Milestone` with given `milestone_id` does not exist.
+- `500 Internal Server Error`
+  - Unexpected server-side error while updating milestone.
