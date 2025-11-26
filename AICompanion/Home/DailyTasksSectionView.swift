@@ -104,41 +104,43 @@ struct DailyTasksSectionView: View {
     }
 
     private var emptyTasksCard: some View {
-        let cardWidth = UIScreen.main.bounds.width * 0.82
+        GeometryReader { geometry in
+            let cardWidth = geometry.size.width * 0.82
 
-        return HStack {
-            Spacer()
+            HStack {
+                Spacer()
 
-            VStack(spacing: 0) {
-                Text("今日待办")
-                    .font(AppFonts.small)
-                    .foregroundStyle(Color.white)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(AppColors.purple)
+                VStack(spacing: 0) {
+                    Text("今日待办")
+                        .font(AppFonts.small)
+                        .foregroundStyle(Color.white)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(AppColors.purple)
 
-                VStack {
-                    Spacer()
+                    VStack {
+                        Spacer()
 
-                    Text("今天没有待办事项，\n可以休息一下啦。")
-                        .font(AppFonts.body)
-                        .foregroundStyle(AppColors.textBlack)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 20)
+                        Text("今天没有待办事项，\n可以休息一下啦。")
+                            .font(AppFonts.body)
+                            .foregroundStyle(AppColors.textBlack)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 20)
 
-                    Spacer()
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(16)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(16)
-            }
-            .frame(width: cardWidth, height: 280)
-            .background(Color.white)
-            .cornerRadius(24)
-            .shadow(color: Color.black.opacity(0.08), radius: 18, x: 0, y: 8)
+                .frame(width: cardWidth, height: 280)
+                .background(Color.white)
+                .cornerRadius(24)
+                .shadow(color: Color.black.opacity(0.08), radius: 18, x: 0, y: 8)
 
-            Spacer()
+                Spacer()
+            }
         }
     }
 

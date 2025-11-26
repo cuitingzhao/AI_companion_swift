@@ -9,6 +9,7 @@ public struct HomeDailyTasksView: View {
     @State private var isShowingFortuneCard: Bool = false
     @State private var isFortuneGlowActive: Bool = false
     @State private var selectedTab: Tab = .daily
+    @State private var isShowingChat: Bool = false
 
     public init(userId: Int?) {
         self.userId = userId
@@ -54,7 +55,7 @@ public struct HomeDailyTasksView: View {
                                 )
                             case .goals:
                                 GoalTrackingPageView(
-                                    plans: viewModel.goalPlans,
+                                    plans: viewModel.activeGoalPlans,
                                     isLoading: viewModel.isGoalPlanLoading,
                                     errorText: viewModel.goalPlanError
                                 )
@@ -97,15 +98,20 @@ public struct HomeDailyTasksView: View {
                         selectedTaskForDetail = nil
                     }
 
-                VStack {
-                    TaskExecutionCardView(
-                        task: selectedTask,
-                        width: UIScreen.main.bounds.width * 0.82,
-                        onAction: { action in
-                            handleExecutionAction(action, for: selectedTask)
-                            selectedTaskForDetail = nil
-                        }
-                    )
+                GeometryReader { geometry in
+                    VStack {
+                        Spacer()
+                        TaskExecutionCardView(
+                            task: selectedTask,
+                            width: geometry.size.width * 0.82,
+                            onAction: { action in
+                                handleExecutionAction(action, for: selectedTask)
+                                selectedTaskForDetail = nil
+                            }
+                        )
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity)
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 20)
@@ -128,9 +134,27 @@ public struct HomeDailyTasksView: View {
                 .padding(.horizontal, 24)
                 .padding(.vertical, 24)
             }
+
+            // Floating chat button
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    FloatingChatButton {
+                        isShowingChat = true
+                    }
+                    .padding(.trailing, 24)
+                    .padding(.bottom, 100)
+                }
+            }
+        }
+        .fullScreenCover(isPresented: $isShowingChat) {
+            if let userId = userId {
+                ChatView(userId: userId)
+            }
         }
         .onAppear(perform: viewModel.loadInitialDataIfNeeded)
-        .onChange(of: selectedTab) { newTab in
+        .onChange(of: selectedTab) { _, newTab in
             switch newTab {
             case .goals:
                 Task {

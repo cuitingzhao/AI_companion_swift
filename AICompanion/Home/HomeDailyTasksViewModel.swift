@@ -22,11 +22,19 @@ final class HomeDailyTasksViewModel: ObservableObject {
         self.userId = userId
     }
 
+    /// Returns tasks that are planned/in_progress AND belong to active goals
     var visibleTasks: [DailyTaskItemResponse] {
         guard let items = dailyPlan?.items else { return [] }
+        let activeGoalIds = Set(goalPlans.filter { $0.status == "active" }.map { $0.goalId })
         return items.filter { item in
-            item.status == "planned" || item.status == "in_progress"
+            (item.status == "planned" || item.status == "in_progress") &&
+            activeGoalIds.contains(item.goalId)
         }
+    }
+
+    /// Returns only active goals
+    var activeGoalPlans: [GoalPlanResponse] {
+        goalPlans.filter { $0.status == "active" }
     }
 
     func loadInitialDataIfNeeded() {

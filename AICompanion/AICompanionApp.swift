@@ -38,11 +38,11 @@ struct AICompanionApp: App {
                         onboardingState.currentStep = .kycIntro
                     }
                 case .kycIntro:
-                    KYCIntroView(state: onboardingState) {
+                    KYCIntroView(state: onboardingState, onSkip: {
                         print("🟣 Navigating from kycIntro to kycPersonality")
                         onboardingState.currentPersonalityIndex = 0
                         onboardingState.currentStep = .kycPersonality
-                    }
+                    })
                 case .kycPersonality:
                     KYCPersonalityReviewView(state: onboardingState)
                 case .kycPersonalityEnd:

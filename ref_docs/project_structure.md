@@ -15,6 +15,7 @@ AICompanion/
 |   |   |-- GoalsModels.swift
 |   |   |-- CalendarModels.swift (calendar info for homepage header)
 |   |   |-- FortuneModels.swift (daily fortune response models)
+|   |   |-- ChatModels.swift (chat API request/response models)
 |   |-- DesignSystem/
 |   |   |-- Colors.swift
 |   |   |-- Fonts.swift
@@ -23,6 +24,8 @@ AICompanion/
 |   |       |-- AppTextField.swift
 |   |       |-- VoiceInputButton.swift
 |   |       |-- AppDialog.swift
+|   |       |-- FloatingChatButton.swift (floating action button for chat)
+|   |       |-- Toast.swift (toast notification component)
 |   |
 |   |-- Networking/
 |   |   |-- CitiesAPI.swift
@@ -32,9 +35,12 @@ AICompanion/
 |   |   |-- CalendarAPI.swift (GET /api/v1/utils/calendar/today)
 |   |   |-- FortuneAPI.swift (GET /api/v1/fortune/daily)
 |   |   |-- ExecutionsAPI.swift (PATCH /api/v1/executions/{execution_id})
+|   |   |-- ChatAPI.swift (POST /api/v1/chat/message)
 |   |
 |   |-- Services/
 |   |   |-- LocationService.swift
+|   |   |-- PermissionManager.swift (JIT permission requests for iOS native tools)
+|   |   |-- NativeToolExecutor.swift (executes calendar, alarm, health, screen time actions)
 |   |
 |   |-- Onboarding/
 |   |   |-- OnboardingState.swift
@@ -69,6 +75,8 @@ AICompanion/
 |   |   |-- DailyFortuneCardView.swift (overlay card for fortune details)
 |   |   |-- TaskExecutionCardView.swift (modal card for executing a single task)
 |   |-- HomeDailyTasksView.swift (homepage shell with tabs for daily tasks, goals, etc.)
+|   |-- Chat/
+|   |   |-- ChatView.swift (main AI companion chat page)
 |
 |-- AICompanion.xcodeproj/
 |   |-- ... (Xcode project configuration)

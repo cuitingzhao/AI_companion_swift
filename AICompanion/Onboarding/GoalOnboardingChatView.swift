@@ -87,7 +87,7 @@ public struct GoalOnboardingChatView: View {
                         }
                         .padding(.vertical, 8)
                     }
-                    .onChange(of: messages.count) { _ in
+                    .onChange(of: messages.count) { _, _ in
                         if let lastId = messages.last?.id {
                             withAnimation {
                                 proxy.scrollTo(lastId, anchor: .bottom)
@@ -117,7 +117,7 @@ public struct GoalOnboardingChatView: View {
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("UIKeyboardWillHideNotification"))) { _ in
             keyboardHeight = 0
         }
-        .onChange(of: currentStage) { newStage in
+        .onChange(of: currentStage) { _, newStage in
             guard let newStage else { return }
             if newStage == .goalSplittingExpert {
                 autoContinueAfterGoalSplittingIfNeeded()

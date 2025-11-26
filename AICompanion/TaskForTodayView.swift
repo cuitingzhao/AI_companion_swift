@@ -111,41 +111,43 @@ public struct TaskForTodayView: View {
     }
 
     private var emptyView: some View {
-        let cardWidth = UIScreen.main.bounds.width * 0.78
+        GeometryReader { geometry in
+            let cardWidth = geometry.size.width * 0.78
 
-        return HStack {
-            Spacer()
+            HStack {
+                Spacer()
 
-            VStack(spacing: 0) {
-                Text("今日待办")
-                    .font(AppFonts.small)
-                    .foregroundStyle(Color.white)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(AppColors.lavender)
+                VStack(spacing: 0) {
+                    Text("今日待办")
+                        .font(AppFonts.small)
+                        .foregroundStyle(Color.white)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(AppColors.lavender)
 
-                VStack {
-                    Spacer()
+                    VStack {
+                        Spacer()
 
-                    Text("还没有待办事项，\n歇一歇吧。")
-                        .font(AppFonts.body)
-                        .foregroundStyle(AppColors.textBlack)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 20)
+                        Text("还没有待办事项，\n歇一歇吧。")
+                            .font(AppFonts.body)
+                            .foregroundStyle(AppColors.textBlack)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 20)
 
-                    Spacer()
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(16)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(16)
-            }
-            .frame(width: cardWidth, height: 360)
-            .background(Color.white)
-            .cornerRadius(24)
-            .shadow(color: Color.black.opacity(0.08), radius: 18, x: 0, y: 8)
+                .frame(width: cardWidth, height: 360)
+                .background(Color.white)
+                .cornerRadius(24)
+                .shadow(color: Color.black.opacity(0.08), radius: 18, x: 0, y: 8)
 
-            Spacer()
+                Spacer()
+            }
         }
     }
 
@@ -195,30 +197,32 @@ private struct GoalTaskListCard: View {
     let group: GoalTaskGroup
 
     var body: some View {
-        let cardWidth = UIScreen.main.bounds.width * 0.78
+        GeometryReader { geometry in
+            let cardWidth = geometry.size.width * 0.78
 
-        VStack(spacing: 0) {
-            Text(group.goalTitle)
-                .font(AppFonts.small)
-                .foregroundStyle(Color.white)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(AppColors.lavender)
+            VStack(spacing: 0) {
+                Text(group.goalTitle)
+                    .font(AppFonts.small)
+                    .foregroundStyle(Color.white)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(AppColors.lavender)
 
-            ScrollView(.vertical, showsIndicators: true) {
-                VStack(spacing: 12) {
-                    ForEach(group.items, id: \.executionId) { item in
-                        TaskDetailCardView(title: item.title, minutes: item.estimatedMinutes)
+                ScrollView(.vertical, showsIndicators: true) {
+                    VStack(spacing: 12) {
+                        ForEach(group.items, id: \.executionId) { item in
+                            TaskDetailCardView(title: item.title, minutes: item.estimatedMinutes)
+                        }
                     }
+                    .padding(16)
                 }
-                .padding(16)
             }
+            .frame(width: cardWidth, height: 360)
+            .background(Color.white)
+            .cornerRadius(24)
+            .shadow(color: Color.black.opacity(0.08), radius: 18, x: 0, y: 8)
         }
-        .frame(width: cardWidth, height: 360)
-        .background(Color.white)
-        .cornerRadius(24)
-        .shadow(color: Color.black.opacity(0.08), radius: 18, x: 0, y: 8)
     }
 }
 

@@ -60,14 +60,14 @@ public struct KYCChatView: View {
                         }
                         .padding(.vertical, 8)
                     }
-                    .onChange(of: messages.count) { _ in
+                    .onChange(of: messages.count) { _, _ in
                         if let lastId = messages.last?.id {
                             withAnimation {
                                 proxy.scrollTo(lastId, anchor: .bottom)
                             }
                         }
                     }
-                    .onChange(of: isSending) { sending in
+                    .onChange(of: isSending) { _, sending in
                         guard sending, let lastId = messages.last?.id else { return }
                         withAnimation {
                             proxy.scrollTo(lastId, anchor: .bottom)

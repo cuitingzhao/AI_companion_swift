@@ -17,38 +17,39 @@ public struct OnboardingScaffold<Header: View, Content: View>: View {
     }
 
     public var body: some View {
-        let screenWidth = UIScreen.main.bounds.width
-        let containerWidth = screenWidth - 48
-        
-        return ZStack(alignment: .top) {
-            AppColors.gradientBackground
-                .ignoresSafeArea()
+        GeometryReader { geometry in
+            let containerWidth = geometry.size.width - 48
 
-            Image("star_bg")
-                .resizable()
-                .scaledToFill()
-                .ignoresSafeArea()
-                .opacity(0.6)
+            ZStack(alignment: .top) {
+                AppColors.gradientBackground
+                    .ignoresSafeArea()
 
-            header()
-                .padding(.top, 32)
+                Image("star_bg")
+                    .resizable()
+                    .scaledToFill()
+                    .ignoresSafeArea()
+                    .opacity(0.6)
 
-            VStack {
-                Spacer(minLength: topSpacing)
+                header()
+                    .padding(.top, 32)
 
-                ZStack(alignment: .top) {
-                    RoundedRectangle(cornerRadius: 28)
-                        .fill(containerColor)
-                        .shadow(color: Color.black.opacity(0.06), radius: 20, x: 0, y: 8)
+                VStack {
+                    Spacer(minLength: topSpacing)
 
-                    VStack(spacing: 24) {
-                        content()
+                    ZStack(alignment: .top) {
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(containerColor)
+                            .shadow(color: Color.black.opacity(0.06), radius: 20, x: 0, y: 8)
+
+                        VStack(spacing: 24) {
+                            content()
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 20)
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 20)
+                    .frame(width: containerWidth)
+                    .padding(.bottom, 28)
                 }
-                .frame(width: containerWidth)
-                .padding(.bottom, 28)
             }
         }
     }

@@ -16,14 +16,14 @@ public struct CitySearchField: View {
 
     public var body: some View {
         VStack(spacing: 8) {
-            AppTextField("出生地点", text: $text) {
+            AppTextField("出生地点", text: $text, accessory: {
                 if isLoading {
                     ProgressView()
                         .progressViewStyle(.circular)
                 }
-            }
-            .onChange(of: text) { new in
-                performSearchDebounced(for: new)
+            })
+            .onChange(of: text) { _, newValue in
+                performSearchDebounced(for: newValue)
             }
 
             if showDropdown {

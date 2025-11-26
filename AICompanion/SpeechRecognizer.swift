@@ -35,7 +35,7 @@ public final class SpeechRecognizer: NSObject, ObservableObject {
         }
 
         #if os(iOS)
-        AVAudioSession.sharedInstance().requestRecordPermission { [weak self] granted in
+        AVAudioApplication.requestRecordPermission { [weak self] granted in
             if !granted {
                 DispatchQueue.main.async {
                     self?.errorMessage = "麦克风权限未开启，请在系统设置中允许麦克风权限。"
@@ -78,6 +78,11 @@ public final class SpeechRecognizer: NSObject, ObservableObject {
             return
         }
         recognitionRequest.shouldReportPartialResults = true
+
+        // Enable automatic punctuation (iOS 16+)
+        if #available(iOS 16, *) {
+            recognitionRequest.addsPunctuation = true
+        }
 
         let inputNode = audioEngine.inputNode
         let recordingFormat = inputNode.outputFormat(forBus: 0)

@@ -42,7 +42,7 @@ public final class LocationService: NSObject, CLLocationManagerDelegate {
     }
 
     private func startLocationFlow() {
-        let status = CLLocationManager.authorizationStatus()
+        let status = manager.authorizationStatus
         switch status {
         case .notDetermined:
             manager.requestWhenInUseAuthorization()

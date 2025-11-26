@@ -34,10 +34,10 @@ public struct VoiceInputButton: View {
         .onAppear {
             speechRecognizer.requestAuthorization()
         }
-        .onChange(of: speechRecognizer.transcript, perform: { newValue in
+        .onChange(of: speechRecognizer.transcript) { _, newValue in
             guard !newValue.isEmpty else { return }
             text = newValue
-        })
+        }
         .alert("语音输入不可用", isPresented: Binding(
             get: { speechRecognizer.errorMessage != nil },
             set: { isPresented in
