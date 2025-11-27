@@ -14,7 +14,7 @@ This is the primary chat endpoint for the AI companion. It:
 2. **Injects tool capabilities** (L0 index) into the system prompt
 3. **Calls AI model** with tool definitions (L1 schemas) if enabled
 4. **Executes tools** automatically when AI requests them (e.g., ganzhi calculator, goal manager)
-5. **Returns response** with reply, follow-up events, and tool execution records
+5. **Returns response** with reply, tool execution records, and any `pending_client_actions` for the client to handle
 
 ### Query Parameters
 
@@ -35,20 +35,8 @@ This is the primary chat endpoint for the AI companion. It:
 | Field | Type | Description |
 | --- | --- | --- |
 | `reply` | string | AI companion's reply to the user. |
-| `events` | array of `ChatEventPayload` | Follow-up memory events (create/update instructions). |
 | `tool_calls_made` | array of `ToolCallRecord` | Tools called during this chat turn. Empty if no tools invoked. |
-| `pending_client_actions` | array of `PendingClientAction` | Actions for iOS client to execute locally (calendar, alarm, etc.). |
-
-#### `ChatEventPayload` Structure
-
-| Field | Type | Description |
-| --- | --- | --- |
-| `event_id` | integer \| null | Existing event ID for updates; null/omitted for new events. |
-| `desc` | string | Natural-language description of the event. |
-| `is_event_new` | boolean | `true` for new events, `false` for updates. |
-| `progress_note` | string \| null | Progress note for this event update. |
-| `priority` | string | Priority level: `"low"`, `"medium"`, or `"high"`. |
-| `event_state` | string | Event state: `"active"` or `"resolved"`. |
+| `pending_client_actions` | array of `PendingClientAction` | Actions for iOS client to execute locally (calendar, alarm, goal wizard, etc.). |
 
 #### `ToolCallRecord` Structure
 
@@ -62,8 +50,8 @@ This is the primary chat endpoint for the AI companion. It:
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `tool` | string | Name of the iOS native tool (e.g., `calendar_manager`, `alarm_manager`). |
-| `action` | string | Action to perform (e.g., `create_event`, `create_alarm`). |
+| `tool` | string | Name of the client-side action source (e.g., `calendar_manager`, `alarm_manager`, `goal_wizard`). |
+| `action` | string | Action to perform (e.g., `create_event`, `create_alarm`, `start`). |
 | `params` | object | Parameters for the action. |
 
 ### Available Tools
@@ -74,7 +62,8 @@ When `enable_tools=true`, the AI can call these tools:
 | --- | --- | --- | --- |
 | `ganzhi_calculator` | 计算指定日期的天干地支信息 | 用户询问运势、流年流月时 | Backend |
 | `goal_manager` | 管理用户的目标、里程碑和任务 | 用户查询或更新目标进度时 | Backend |
-| `web_search` | 搜索互联网获取最新信息 | 用户询问新闻、实时信息时 | Backend (Tavily API) |
+| `goal_wizard` | 启动目标设定向导（客户端多步流程） | 用户明确表达想认真设定/调整目标，并同意进入向导时 | Client（通过 `pending_client_actions` 触发向导 UI） |
+| `web_search` | 搜索互联网获取最新信息 | 用户询问新闻、实时信息时 | Backend (Kimi web_search agent, Tavily fallback) |
 | `calendar_manager` | 管理日历日程 | 用户创建/查看日程时 | iOS Client |
 | `alarm_manager` | 创建和管理闹钟 | 用户设置闹钟时 | iOS Client |
 | `health_data` | 查询健康数据 | 用户询问步数/睡眠/运动时 | iOS Client |
@@ -97,6 +86,13 @@ When `enable_tools=true`, the AI can call these tools:
 | `task_id` | string | Depends | Required for `update_task`. |
 | `updates` | object | Depends | Fields to update or create. |
 
+#### `goal_wizard` Arguments
+
+| Argument | Type | Required | Description |
+| --- | --- | --- | --- |
+| `candidate_description` | string | Yes | AI 总结的目标候选描述，1–2 句自然语言，用于在客户端向导中预填。 |
+| `source` | string | No | 触发来源，例如 `"chat"` 或 `"manual"`。默认由后端填为 `"chat"`。 |
+
 #### `web_search` Arguments
 
 | Argument | Type | Required | Description |
@@ -115,6 +111,30 @@ These tools return `pending_client_actions` instead of executing directly. The i
 
 See `PendingClientAction` structure above for the response format.
 
+#### Goal Wizard Trigger (goal_wizard)
+
+The `goal_wizard` tool is a **trigger** for a client-side goal setting wizard. It does not
+create or update goals directly. Instead, the backend returns a `pending_client_action` like:
+
+```json
+{
+  "tool": "goal_wizard",
+  "action": "start",
+  "params": {
+    "candidate_description": "在一年内坚持锻炼，让体脂降到20%左右",
+    "source": "chat",
+    "user_id": "1"
+  }
+}
+```
+
+The mobile app should:
+1. Inspect `pending_client_actions` in the `ChatMessageResponse`.
+2. When it finds an action with `tool = "goal_wizard"` and `action = "start"`,
+   open the dedicated goal wizard UI.
+3. Use `candidate_description` to pre-fill the wizard with the AI's understanding
+   of the goal candidate.
+
 ### Example Request
 
 ```bash
@@ -131,7 +151,6 @@ curl -X POST "http://localhost:8000/api/v1/chat/message?enable_tools=true" \
 ```json
 {
   "reply": "让我帮你查一下今天的干支信息。今天是乙巳日，巳火藏丙、庚、戊。从八字角度来看，今天火气较旺...",
-  "events": [],
   "tool_calls_made": [
     {
       "tool": "ganzhi_calculator",
@@ -155,32 +174,11 @@ curl -X POST "http://localhost:8000/api/v1/chat/message?enable_tools=true" \
 }
 ```
 
-### Example Response (with follow-up event)
-
-```json
-{
-  "reply": "听起来你最近工作压力挺大的，要注意休息哦。我会记住这件事，过几天再问问你情况怎么样了。",
-  "events": [
-    {
-      "event_id": null,
-      "desc": "用户工作压力大，需要关心",
-      "is_event_new": true,
-      "progress_note": null,
-      "priority": "medium",
-      "event_state": "active"
-    }
-  ],
-  "tool_calls_made": [],
-  "pending_client_actions": []
-}
-```
-
 ### Example Response (with iOS native tool)
 
 ```json
 {
   "reply": "好的，我来帮你设置明早7点的闹钟。",
-  "events": [],
   "tool_calls_made": [
     {
       "tool": "alarm_manager",
@@ -216,12 +214,52 @@ curl -X POST "http://localhost:8000/api/v1/chat/message?enable_tools=true" \
 }
 ```
 
-### Example Response (no tools, no events)
+### Example Response (with goal wizard trigger)
+
+```json
+{
+  "reply": "听起来这是一个对你很重要的长期目标。如果你愿意，我们可以用一个小向导一步步帮你把这个目标理清楚。",
+  "tool_calls_made": [
+    {
+      "tool": "goal_wizard",
+      "arguments": {
+        "candidate_description": "在一年内坚持锻炼，让体脂降到20%左右",
+        "source": "chat"
+      },
+      "result": {
+        "status": "pending_client_action",
+        "message": "目标设定向导已准备好，等待客户端执行",
+        "pending_client_action": {
+          "tool": "goal_wizard",
+          "action": "start",
+          "params": {
+            "candidate_description": "在一年内坚持锻炼，让体脂降到20%左右",
+            "source": "chat",
+            "user_id": "1"
+          }
+        }
+      }
+    }
+  ],
+  "pending_client_actions": [
+    {
+      "tool": "goal_wizard",
+      "action": "start",
+      "params": {
+        "candidate_description": "在一年内坚持锻炼，让体脂降到20%左右",
+        "source": "chat",
+        "user_id": "1"
+      }
+    }
+  ]
+}
+```
+
+### Example Response (simple reply)
 
 ```json
 {
   "reply": "哈哈，今天心情不错嘛！有什么开心的事情想分享吗？😊",
-  "events": [],
   "tool_calls_made": [],
   "pending_client_actions": []
 }
@@ -236,9 +274,9 @@ curl -X POST "http://localhost:8000/api/v1/chat/message?enable_tools=true" \
 
 ### Notes
 
-1. **Tool Execution Loop**: When AI decides to use a tool, the system automatically executes it and feeds the result back to the AI. This may happen multiple times (up to 5 rounds) before a final response.
+1. **Tool Execution Loop**: When AI decides to use a tool, the system automatically executes it and feeds the result back to the AI. This may happen multiple times (up to 2 rounds) before a final response.
 
-2. **Follow-up Memory**: The AI can create or update follow-up events to remember things to check on later. At most one event is processed per turn.
+2. **Follow-up Memory**: Follow-up events are managed by an offline batch job, not during chat. The chat agent is aware of active follow-up events for context but does not create or update them in real-time.
 
 3. **Context Building**: The system automatically includes:
    - User profile (nickname, age, gender, personality)
@@ -249,6 +287,131 @@ curl -X POST "http://localhost:8000/api/v1/chat/message?enable_tools=true" \
 4. **Model Selection**: Default model is `deepseek-chat`. Override via `model_name` in request or `MODEL_MAIN_CHAT` environment variable.
 
 5. **Message Persistence**: All user and assistant messages are automatically saved to the conversation history.
+
+---
+
+## 1.1 Streaming Variant: POST `/api/v1/chat/message/stream`
+
+Stream the AI companion reply token-by-token using **Server-Sent Events (SSE)**.
+
+This endpoint shares the same request body as `POST /api/v1/chat/message` but
+returns a streaming response instead of a single JSON object.
+
+### Description
+
+This streaming endpoint:
+
+1. Builds the same rich system prompt (user profile, Bazi, goals, followups).
+2. **Disables backend tool execution in v1** to keep the stream simple and
+   predictable – the model focuses purely on generating a conversational reply.
+3. Streams tokens as they are generated by the model via SSE events.
+4. On completion, persists both the user message and the final assistant reply
+   into the conversation history.
+
+Use this when you want a more responsive chat UI where the user can see the
+assistant typing in real time.
+
+### Request
+
+- **Method:** `POST`
+- **Path:** `/api/v1/chat/message/stream`
+- **Headers:**
+  - `Content-Type: application/json`
+  - `Accept: text/event-stream`
+- **Body:** `ChatMessageRequest` (same as `/message`)
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `user_id` | integer | Yes | User ID (must be > 0). |
+| `message` | string | Yes | User's chat message (1-4000 characters). |
+| `model_name` | string | No | Optional model override. Defaults to `MODEL_MAIN_CHAT` env var or `deepseek-chat`. |
+
+### Response — SSE Event Stream
+
+- **Content-Type:** `text/event-stream`
+- The response is a sequence of SSE events separated by blank lines.
+
+#### Event Types
+
+| Event | Description | Data Payload Example |
+| --- | --- | --- |
+| `token` | A partial piece of the assistant reply. Append `content` to the UI buffer. | `{"content": "你好"}` |
+| `done` | Final event with the full reply and optional `events` array. | `{"reply": "完整回复...", "events": []}` |
+| `error` | Indicates a failure during streaming. | `{"error": "Internal server error"}` |
+
+##### `token` Events
+
+```text
+event: token
+data: {"content": "你好"}
+
+event: token
+data: {"content": "，我是你的AI伙伴"}
+```
+
+The client should append each `content` value to the on-screen message as it
+arrives.
+
+##### `done` Event
+
+```text
+event: done
+data: {
+  "reply": "你好，我是你的 AI 伙伴，很高兴认识你！",
+  "events": []
+}
+```
+
+- `reply`: Final assistant reply string (may be derived from structured JSON
+  `{ reply, events }` when the model follows the contract).
+- `events`: Optional follow-up memory payload, same structure as
+  `ChatEventPayload` used in `/message`.
+
+##### `error` Event
+
+```text
+event: error
+data: {"error": "Configuration for model 'xxx' not found."}
+```
+
+The client should treat this as a terminal failure for the stream.
+
+### Behavior and Limitations
+
+- **No tools in v1:**
+  - The backend passes `tools=None` to the model in streaming mode.
+  - The prompt explicitly tells the model that tools are not available in this
+    mode.
+  - If you need tool execution (e.g., web_search, calendar, alarm), you should
+    use the non-streaming `POST /api/v1/chat/message` endpoint.
+
+- **Message persistence:**
+  - On the `done` event, the backend saves:
+    - The user message (role `user`).
+    - The final assistant reply (role `assistant`) with token counts when
+      available.
+
+- **Structured JSON output:**
+  - If the model returns a JSON object like `{ "reply": "...", "events": [...] }`
+    as the final text, the backend will parse it and expose:
+    - `reply`: from the JSON.
+    - `events`: from the JSON.
+  - If parsing fails, the raw text is used as `reply` and `events` defaults to `[]`.
+
+### Example Streaming Request (curl)
+
+```bash
+curl -N \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  -d '{
+    "user_id": 1,
+    "message": "简单自我介绍一下吧"
+  }' \
+  http://localhost:8000/api/v1/chat/message/stream
+```
+
+The `-N` flag tells `curl` to disable buffering so you can see tokens as they arrive.
 
 ---
 
@@ -448,7 +611,8 @@ User can respond or scroll to see history
 | `500 Internal Server Error` | AI generation or database failure. |
 
 
-## 4. Permission Request Flow Example
+
+## Appendix. Permission Request Flow Example
 ┌─────────────────────────────────────────────────────────────────┐
 │                    PERMISSION REQUEST FLOW                       │
 └─────────────────────────────────────────────────────────────────┘

@@ -11,7 +11,7 @@ struct ChatMessage: Identifiable, Equatable {
 
     let id: String
     let serverId: Int?  // Server-side message ID for pagination
-    let text: String
+    var text: String    // Mutable for streaming updates
     let sender: Sender
     let createdAt: Date?  // Timestamp for divider display
     let isDivider: Bool  // Special flag for date divider
@@ -24,7 +24,7 @@ struct ChatMessage: Identifiable, Equatable {
         self.createdAt = createdAt
         self.isDivider = isDivider
     }
-
+    
     /// Creates a date divider message
     static func divider(date: Date) -> ChatMessage {
         ChatMessage(text: "", sender: .ai, createdAt: date, isDivider: true)
@@ -60,6 +60,11 @@ class ChatViewModel: ObservableObject {
     @Published var pendingPermissionAction: PendingClientAction? = nil
     @Published var showPermissionAlert: Bool = false
     @Published var permissionType: PermissionType? = nil
+    
+    // Goal Wizard State
+    @Published var showGoalWizard: Bool = false
+    @Published var goalWizardDescription: String?
+    @Published var goalWizardSource: String?
     
     // MARK: - Initialization
     
@@ -141,57 +146,17 @@ class ChatViewModel: ObservableObject {
         
         Task {
             do {
+                // Use non-streaming endpoint
                 let response = try await ChatAPI.shared.sendMessage(request)
-                print("🟣 Chat message response received")
-                print("🟣 Raw reply: \(response.reply)")
                 
-                // Extract the actual reply text, handling potential nested JSON in reply
-                let replyText = extractReplyText(from: response.reply)
-                if !replyText.isEmpty {
-                    let aiMessage = ChatMessage(text: replyText, sender: .ai)
-                    messages.append(aiMessage)
-                }
+                // Add AI reply message
+                let aiMessage = ChatMessage(text: response.reply, sender: .ai)
+                messages.append(aiMessage)
                 
-                // Log tool calls if any
-                if !response.toolCallsMade.isEmpty {
-                    print("🔧 Tool calls made: \(response.toolCallsMade.count)")
-                    for toolCall in response.toolCallsMade {
-                        print("  - Tool: \(toolCall.tool)")
-                    }
-                }
+                // Handle pending client actions from top-level array
+                // Per backend contract: client should read from pending_client_actions at top level
+                await handlePendingActions(response.pendingClientActions)
                 
-                // Log events if any
-                if !response.events.isEmpty {
-                    print("📅 Events created/updated: \(response.events.count)")
-                }
-                
-                // Handle pending client actions (iOS native tools)
-                // First check top-level pending_client_actions
-                var actionsToExecute = response.pendingClientActions
-                print("📱 Top-level pending client actions: \(actionsToExecute.count)")
-                
-                // Also extract from tool_calls_made[].result.result.pending_client_action (backend workaround)
-                for toolCall in response.toolCallsMade {
-                    // Path: result -> result -> pending_client_action
-                    if let nestedResult = toolCall.result["result"]?.value as? [String: Any],
-                       let resultDict = nestedResult["pending_client_action"] as? [String: Any],
-                       let tool = resultDict["tool"] as? String,
-                       let action = resultDict["action"] as? String,
-                       let paramsDict = resultDict["params"] as? [String: Any] {
-                        print("📱 Found nested action in tool_calls_made: \(tool).\(action)")
-                        let params = paramsDict.mapValues { AnyCodable($0) }
-                        let pendingAction = PendingClientAction(tool: tool, action: action, params: params)
-                        actionsToExecute.append(pendingAction)
-                    }
-                }
-                
-                print("📱 Total actions to execute: \(actionsToExecute.count)")
-                if !actionsToExecute.isEmpty {
-                    for action in actionsToExecute {
-                        print("📱 Action: \(action.tool).\(action.action) with params: \(action.params)")
-                    }
-                    await handlePendingActions(actionsToExecute)
-                }
             } catch {
                 errorText = "消息发送失败，请检查网络后稍后再试。"
                 print("❌ Chat message error:", error)
@@ -202,22 +167,43 @@ class ChatViewModel: ObservableObject {
     
     func requestPermissionAndExecute() async {
         guard let type = permissionType,
-              let action = pendingPermissionAction else { return }
+              let action = pendingPermissionAction else {
+            print("❌ requestPermissionAndExecute: Missing type or action")
+            return
+        }
         
+        print("🔐 Requesting permission for: \(type)")
         let status = await PermissionManager.shared.requestPermission(for: type)
+        print("🔐 Permission status returned: \(status)")
         
         if status == .authorized {
             // Retry execution
             let result = await NativeToolExecutor.shared.execute(action)
+            
             switch result {
             case .success(let message):
                 let aiMessage = ChatMessage(text: message, sender: .ai)
                 messages.append(aiMessage)
-            case .failed(let error):
-                let aiMessage = ChatMessage(text: "操作失败：\(error)", sender: .ai)
+                // Show toast for calendar actions
+                if action.tool == "calendar_manager" {
+                    showToast(message: "日历已更新", type: .success)
+                }
+                
+            case .permissionRequired(let type):
+                // Show permission alert
+                pendingPermissionAction = action
+                permissionType = type
+                showPermissionAlert = true
+                return // Wait for user response
+                
+            case .permissionDenied(let fallbackMessage):
+                let aiMessage = ChatMessage(text: fallbackMessage, sender: .ai)
                 messages.append(aiMessage)
-            default:
-                break
+                
+            case .failed(let error):
+                print("❌ Native tool execution failed: \(error)")
+                let aiMessage = ChatMessage(text: "抱歉，操作失败了：\(error)", sender: .ai)
+                messages.append(aiMessage)
             }
         } else {
             let aiMessage = ChatMessage(text: type.denialMessage, sender: .ai)
@@ -259,8 +245,8 @@ class ChatViewModel: ObservableObject {
             // Convert history messages to ChatMessage
             let historyMessages = response.messages.map { msg -> ChatMessage in
                 let sender: ChatMessage.Sender = msg.role == "user" ? .user : .ai
-                // Extract actual reply text for AI messages (handles nested JSON)
-                let text = sender == .ai ? extractReplyText(from: msg.content) : msg.content
+                // Backend now returns plain text
+                let text = msg.content.trimmingCharacters(in: .whitespacesAndNewlines)
                 let timestamp = parseISO8601Date(msg.createdAt)
                 return ChatMessage(text: text, sender: sender, serverId: msg.id, createdAt: timestamp)
             }
@@ -288,6 +274,22 @@ class ChatViewModel: ObservableObject {
     
     private func handlePendingActions(_ actions: [PendingClientAction]) async {
         for action in actions {
+            // Handle goal wizard special case
+            if action.tool == "goal_wizard" && action.action == "start" {
+                let candidateDesc = action.params["candidate_description"]?.value as? String
+                let source = action.params["source"]?.value as? String
+                
+                await MainActor.run {
+                    self.goalWizardDescription = candidateDesc
+                    self.goalWizardSource = source
+                    self.showGoalWizard = true
+                }
+                
+                // Notify backend that wizard is started?
+                // Currently NativeToolExecutor doesn't handle goal_wizard, so we handle it here.
+                continue
+            }
+            
             let result = await NativeToolExecutor.shared.execute(action)
             
             switch result {
@@ -325,30 +327,6 @@ class ChatViewModel: ObservableObject {
     }
     
     // MARK: - Helpers
-    
-    /// Extracts the actual reply text from the response.
-    /// Handles cases where the backend returns nested JSON in the reply field.
-    private func extractReplyText(from reply: String) -> String {
-        let trimmed = reply.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // Check if reply starts with "json" prefix (malformed response)
-        var jsonString = trimmed
-        if trimmed.lowercased().hasPrefix("json") {
-            jsonString = String(trimmed.dropFirst(4)).trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        
-        // Try to parse as JSON and extract "reply" field
-        if jsonString.hasPrefix("{"),
-           let data = jsonString.data(using: .utf8),
-           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let nestedReply = json["reply"] as? String {
-            print("🟡 Extracted nested reply from JSON")
-            return nestedReply.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        
-        // Return original if not nested JSON
-        return trimmed
-    }
     
     /// Parses ISO 8601 date string from backend
     private func parseISO8601Date(_ dateString: String) -> Date? {

@@ -256,6 +256,10 @@
 				DEVELOPMENT_TEAM = VCBXL7D47G;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "为了帮你管理日程，需要访问你的日历";
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "为了帮你管理日程，需要访问你的日历";
+				INFOPLIST_KEY_NSHealthClinicalHealthRecordsShareUsageDescription = "为了帮你记录健康数据，需要写入你的健康信息";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "为了帮你查看健康数据，需要读取你的健康信息";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "需要访问你的位置信息来获取当前所在城市，用于完善个人档案和KYC信息收集。";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "需要访问麦克风来采集你的语音内容，用于语音输入和KYC信息收集。";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "需要使用语音识别来将你的语音内容转换为文字，用于与你的五行伙伴聊天和收集KYC信息。";
@@ -290,6 +294,11 @@
 				DEVELOPMENT_TEAM = VCBXL7D47G;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "为了帮你管理日程，需要访问你的日历";
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "为了帮你管理日程，需要访问你的日历";
+				INFOPLIST_KEY_NSHealthClinicalHealthRecordsShareUsageDescription = "为了帮你记录健康数据，需要写入你的健康信息";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "为了帮你查看健康数据，需要读取你的健康信息";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "需要访问你的位置信息来获取当前所在城市，用于完善个人档案和KYC信息收集。";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "需要访问麦克风来采集你的语音内容，用于语音输入和KYC信息收集。";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "需要使用语音识别来将你的语音内容转换为文字，用于与你的五行伙伴聊天和收集KYC信息。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

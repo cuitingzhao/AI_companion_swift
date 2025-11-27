@@ -17,6 +17,9 @@ final class HomeDailyTasksViewModel: ObservableObject {
     @Published var goalPlans: [GoalPlanResponse] = []
     @Published var isGoalPlanLoading: Bool = false
     @Published var goalPlanError: String?
+    
+    @Published var showGoalWizard: Bool = false
+    @Published var goalWizardSource: String? = "manual"
 
     init(userId: Int?) {
         self.userId = userId

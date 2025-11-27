@@ -21,7 +21,7 @@ struct ChatBubble: View {
             .foregroundStyle(AppColors.textBlack)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(isUser ? AppColors.neutralGray.opacity(0.5) : Color.white)
+            .background(isUser ? AppColors.neutralGray.opacity(0.2) : Color.white)
             .cornerRadius(18)
     }
 }

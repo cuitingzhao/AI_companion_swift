@@ -47,7 +47,8 @@ public enum PermissionStatus {
 public final class PermissionManager {
     public static let shared = PermissionManager()
     
-    private let eventStore = EKEventStore()
+    /// Shared EKEventStore - use this for all calendar operations
+    public let eventStore = EKEventStore()
     private let healthStore: HKHealthStore? = HKHealthStore.isHealthDataAvailable() ? HKHealthStore() : nil
     
     // Cache permission status to avoid repeated checks
@@ -127,12 +128,16 @@ public final class PermissionManager {
     private func requestCalendarPermission() async -> PermissionStatus {
         do {
             if #available(iOS 17.0, *) {
+                print("🔐 Requesting full calendar access (iOS 17+)...")
                 let granted = try await eventStore.requestFullAccessToEvents()
+                print("🔐 Calendar permission result: \(granted ? "granted" : "denied")")
                 let status: PermissionStatus = granted ? .authorized : .denied
                 cachedStatus[.calendar] = status
                 return status
             } else {
+                print("🔐 Requesting calendar access (iOS < 17)...")
                 let granted = try await eventStore.requestAccess(to: .event)
+                print("🔐 Calendar permission result: \(granted ? "granted" : "denied")")
                 let status: PermissionStatus = granted ? .authorized : .denied
                 cachedStatus[.calendar] = status
                 return status

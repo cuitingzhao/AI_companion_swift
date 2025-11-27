@@ -41,6 +41,7 @@ AICompanion/
 |   |   |-- LocationService.swift
 |   |   |-- PermissionManager.swift (JIT permission requests for iOS native tools)
 |   |   |-- NativeToolExecutor.swift (executes calendar, alarm, health, screen time actions)
+|   |   |-- SpeechRecognizer.swift (speech to text service)
 |   |
 |   |-- Onboarding/
 |   |   |-- OnboardingState.swift
@@ -65,18 +66,27 @@ AICompanion/
 |   |-- Resources/
 |       |-- ... (shared images/assets, etc.)
 |   |-- Home/
-|   |   |-- HomeDailyTasksViewModel.swift (view model for home tabs: daily tasks, goals, fortune)
+|   |   |-- HomeDailyTasksView.swift (homepage shell with tabs for daily tasks, goals, etc.)
+|   |   |-- HomeDailyTasksViewModel.swift
+|   |   |-- GoalWizard/
+|   |   |   |-- GoalWizardView.swift (standalone goal creation wizard triggered from chat)
 |   |   |-- DailyTasks/
 |   |   |   |-- DailyTasksPageView.swift (page body for "每日待办" tab)
+|   |   |   |-- TaskForTodayView.swift (widget for today's tasks)
 |   |   |-- GoalTracking/
 |   |   |   |-- GoalTrackingPageView.swift (page body for "目标追踪" tab)
 |   |   |-- GoalTrackingSectionView.swift (goal tracking tab UI)
 |   |   |-- DailyTasksSectionView.swift (daily tasks list and empty state)
 |   |   |-- DailyFortuneCardView.swift (overlay card for fortune details)
 |   |   |-- TaskExecutionCardView.swift (modal card for executing a single task)
-|   |-- HomeDailyTasksView.swift (homepage shell with tabs for daily tasks, goals, etc.)
 |   |-- Chat/
 |   |   |-- ChatView.swift (main AI companion chat page)
+|   |   |-- ChatViewModel.swift (MVVM logic for ChatView)
+|   |   |-- Components/
+|   |       |-- ChatHeader.swift
+|   |       |-- ChatBubble.swift
+|   |       |-- ChatDateDivider.swift
+|   |       |-- ChatInputArea.swift
 |
 |-- AICompanion.xcodeproj/
 |   |-- ... (Xcode project configuration)

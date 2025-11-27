@@ -21,11 +21,11 @@ public struct HomeDailyTasksView: View {
             AppColors.gradientBackground
                 .ignoresSafeArea()
 
-            Image("star_bg")
-                .resizable()
-                .scaledToFill()
-                .ignoresSafeArea()
-                .opacity(0.5)
+            // Image("star_bg")
+            //     .resizable()
+            //     .scaledToFill()
+            //     .ignoresSafeArea()
+            //     .opacity(0.5)
 
             VStack(spacing: 0) {
                 currentHeaderView
@@ -34,8 +34,8 @@ public struct HomeDailyTasksView: View {
                     .padding(.bottom, 16)
 
                 ZStack {
-                    AppColors.lavender.opacity(0.9)
-                        .ignoresSafeArea(edges: .bottom)
+                    // AppColors.lavender.opacity(0.1)
+                    //     .ignoresSafeArea(edges: .bottom)
 
                     ScrollView {
                         VStack(spacing: 24) {
@@ -57,7 +57,11 @@ public struct HomeDailyTasksView: View {
                                 GoalTrackingPageView(
                                     plans: viewModel.activeGoalPlans,
                                     isLoading: viewModel.isGoalPlanLoading,
-                                    errorText: viewModel.goalPlanError
+                                    errorText: viewModel.goalPlanError,
+                                    onAddGoal: {
+                                        viewModel.goalWizardSource = "manual"
+                                        viewModel.showGoalWizard = true
+                                    }
                                 )
                             case .fortune, .personality, .settings:
                                 placeholderSection(for: selectedTab)
@@ -151,6 +155,23 @@ public struct HomeDailyTasksView: View {
         .fullScreenCover(isPresented: $isShowingChat) {
             if let userId = userId {
                 ChatView(userId: userId)
+            }
+        }
+        .fullScreenCover(isPresented: $viewModel.showGoalWizard) {
+            if let userId = userId {
+                GoalWizardView(
+                    userId: userId,
+                    candidateDescription: nil,
+                    source: viewModel.goalWizardSource,
+                    onDismiss: {
+                        viewModel.showGoalWizard = false
+                        // Reload goal plans after wizard closes
+                        Task {
+                            viewModel.goalPlans = []
+                            await viewModel.loadGoalPlanIfNeeded()
+                        }
+                    }
+                )
             }
         }
         .onAppear(perform: viewModel.loadInitialDataIfNeeded)
@@ -266,7 +287,7 @@ public struct HomeDailyTasksView: View {
                 ZStack {
                     if symbol == nil {
                         Circle()
-                            .stroke(AppColors.lavender.opacity(0.65), lineWidth: 5)
+                            .stroke(AppColors.purple.opacity(0.65), lineWidth: 5)
                             .frame(width: 92, height: 92)
                             .scaleEffect(isFortuneGlowActive ? 1.06 : 0.92)
                             .blur(radius: 4)
@@ -362,8 +383,9 @@ public struct HomeDailyTasksView: View {
         HStack(spacing: 12) {
             bottomTabItem(icon: "checkmark.circle.fill", label: "每日待办", tab: .daily)
             bottomTabItem(icon: "target", label: "目标追踪", tab: .goals)
-            bottomTabItem(icon: "sparkles", label: "流年推测", tab: .fortune)
-            bottomTabItem(icon: "person.crop.circle", label: "性格密码", tab: .personality)
+            // Hidden for now - feature not ready
+            // bottomTabItem(icon: "sparkles", label: "流年推测", tab: .fortune)
+            // bottomTabItem(icon: "person.crop.circle", label: "性格密码", tab: .personality)
             bottomTabItem(icon: "gearshape", label: "设置", tab: .settings)
         }
         .padding(.horizontal, 24)

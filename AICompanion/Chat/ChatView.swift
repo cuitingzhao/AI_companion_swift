@@ -1,6 +1,10 @@
 import SwiftUI
 import Combine
 
+#if canImport(UIKit)
+import UIKit
+#endif
+
 public struct ChatView: View {
     private let userId: Int
     @Environment(\.dismiss) private var dismiss
@@ -19,7 +23,7 @@ public struct ChatView: View {
     
     public var body: some View {
         GeometryReader { geometry in
-            let containerWidth = geometry.size.width - 48
+            let safeAreaBottom = geometry.safeAreaInsets.bottom
             
             ZStack(alignment: .top) {
                 AppColors.gradientBackground
@@ -28,6 +32,8 @@ public struct ChatView: View {
                 Image("star_bg")
                     .resizable()
                     .scaledToFill()
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .clipped()
                     .ignoresSafeArea()
                     .opacity(0.6)
                 
@@ -113,6 +119,16 @@ public struct ChatView: View {
                                     }
                                     .onAppear {
                                         scrollProxy = proxy
+                                        // Scroll to bottom on initial appear (after messages are loaded)
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                            scrollToBottom(proxy: proxy)
+                                        }
+                                    }
+                                    .task {
+                                        // Wait for initial loading to complete, then scroll
+                                        // This handles the case where messages are loaded before onAppear
+                                        try? await Task.sleep(nanoseconds: 300_000_000) // 0.3s
+                                        scrollToBottom(proxy: proxy)
                                     }
                                 }
                                 
@@ -136,21 +152,23 @@ public struct ChatView: View {
                             .padding(.vertical, 20)
                         }
                     }
-                    .frame(width: containerWidth)
                     .frame(maxHeight: .infinity)
-                    .padding(.bottom, 28)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, keyboardHeight > 0 ? max(keyboardHeight - safeAreaBottom, 0) + 8 : 28)
                 }
             }
         }
-        .padding(.bottom, keyboardHeight)
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .animation(.easeOut(duration: 0.25), value: keyboardHeight)
         .onAppear(perform: viewModel.loadInitialHistory)
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("UIKeyboardWillShowNotification"))) { notification in
-            if let frameValue = notification.userInfo?["UIKeyboardFrameEndUserInfoKey"] as? NSValue {
-                keyboardHeight = frameValue.cgRectValue.height
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
+            guard let userInfo = notification.userInfo,
+                  let frameValue = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else {
+                return
             }
+            keyboardHeight = frameValue.height
         }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("UIKeyboardWillHideNotification"))) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             keyboardHeight = 0
         }
         .navigationBarHidden(true)
@@ -168,6 +186,16 @@ public struct ChatView: View {
             if let type = viewModel.permissionType {
                 Text(type.contextMessage)
             }
+        }
+        .fullScreenCover(isPresented: $viewModel.showGoalWizard) {
+            GoalWizardView(
+                userId: viewModel.userId,
+                candidateDescription: viewModel.goalWizardDescription,
+                source: viewModel.goalWizardSource,
+                onDismiss: {
+                    viewModel.showGoalWizard = false
+                }
+            )
         }
     }
     

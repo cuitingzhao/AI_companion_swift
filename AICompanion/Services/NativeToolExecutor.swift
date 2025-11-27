@@ -17,7 +17,11 @@ public final class NativeToolExecutor {
     public static let shared = NativeToolExecutor()
     
     private let permissionManager = PermissionManager.shared
-    private let eventStore = EKEventStore()
+    
+    /// Use the shared eventStore from PermissionManager to ensure we use the same instance that was granted access
+    private var eventStore: EKEventStore {
+        permissionManager.eventStore
+    }
     
     private init() {}
     
@@ -119,37 +123,65 @@ public final class NativeToolExecutor {
     
     private func createCalendarEvent(_ action: PendingClientAction) async -> NativeToolResult {
         guard let title = action.params["title"]?.value as? String else {
+            print("❌ Calendar: Missing event title")
             return .failed(error: "Missing event title")
+        }
+        
+        // Check if we have a default calendar
+        guard let calendar = eventStore.defaultCalendarForNewEvents else {
+            print("❌ Calendar: No default calendar available")
+            return .failed(error: "没有可用的日历，请在系统设置中添加日历账户")
         }
         
         let event = EKEvent(eventStore: eventStore)
         event.title = title
-        event.calendar = eventStore.defaultCalendarForNewEvents
+        event.calendar = calendar
         
         // Parse start/end times
-        if let startString = action.params["start_time"]?.value as? String,
-           let startDate = parseDateTime(startString) {
-            event.startDate = startDate
-            
-            if let endString = action.params["end_time"]?.value as? String,
-               let endDate = parseDateTime(endString) {
-                event.endDate = endDate
-            } else {
-                // Default to 1 hour duration
-                event.endDate = startDate.addingTimeInterval(3600)
-            }
+        guard let startString = action.params["start_time"]?.value as? String else {
+            print("❌ Calendar: Missing start_time parameter")
+            return .failed(error: "Missing start time")
+        }
+        
+        guard let startDate = parseDateTime(startString) else {
+            print("❌ Calendar: Failed to parse start_time: \(startString)")
+            return .failed(error: "Invalid start time format: \(startString)")
+        }
+        
+        event.startDate = startDate
+        print("📅 Calendar: Start date parsed: \(startDate)")
+        
+        if let endString = action.params["end_time"]?.value as? String,
+           let endDate = parseDateTime(endString) {
+            event.endDate = endDate
+            print("📅 Calendar: End date parsed: \(endDate)")
         } else {
-            return .failed(error: "Missing or invalid start time")
+            // Default to 1 hour duration
+            event.endDate = startDate.addingTimeInterval(3600)
+            print("📅 Calendar: Using default 1 hour duration")
         }
         
         if let notes = action.params["notes"]?.value as? String {
             event.notes = notes
         }
         
+        if let location = action.params["location"]?.value as? String, !location.isEmpty {
+            event.location = location
+        }
+        
+        // Add reminder if specified
+        if let reminderMinutes = action.params["reminder_minutes"]?.value as? Int, reminderMinutes > 0 {
+            let alarm = EKAlarm(relativeOffset: TimeInterval(-reminderMinutes * 60))
+            event.addAlarm(alarm)
+            print("📅 Calendar: Added reminder \(reminderMinutes) minutes before")
+        }
+        
         do {
             try eventStore.save(event, span: .thisEvent)
+            print("✅ Calendar: Event saved successfully - \(title)")
             return .success(message: "已创建日程「\(title)」")
         } catch {
+            print("❌ Calendar: Failed to save event - \(error)")
             return .failed(error: "创建日程失败: \(error.localizedDescription)")
         }
     }
