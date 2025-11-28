@@ -1,7 +1,9 @@
 import SwiftUI
 
+// MARK: - Finch-Inspired Floating Chat Button (3D Style)
 public struct FloatingChatButton: View {
     private let action: () -> Void
+    @State private var isPressed: Bool = false
     @State private var isPulsing: Bool = false
 
     public init(action: @escaping () -> Void) {
@@ -11,40 +13,43 @@ public struct FloatingChatButton: View {
     public var body: some View {
         Button(action: action) {
             ZStack {
-                // Outer glow effect
+                // Finch 3D: Depth layer
                 Circle()
-                    .fill(AppColors.purple.opacity(0.3))
-                    .frame(width: 72, height: 72)
-                    .scaleEffect(isPulsing ? 1.15 : 1.0)
-                    .blur(radius: 8)
-
-                // Main button
+                    .fill(AppColors.primaryDepth)
+                    .frame(width: 60, height: 60)
+                    .offset(y: isPressed ? 2 : 5)
+                
+                // Main button face
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                AppColors.purple.opacity(0.85),
-                                AppColors.purple
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 56, height: 56)
-                    .shadow(color: AppColors.purple.opacity(0.4), radius: 12, x: 0, y: 6)
+                    .fill(AppColors.primary)
+                    .frame(width: 60, height: 60)
+                    .offset(y: isPressed ? 3 : 0)
 
-                // Icon
+                // Icon - friendly chat bubble
                 Image(systemName: "bubble.left.and.bubble.right.fill")
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(.system(size: 24, weight: .medium, design: .rounded))
                     .foregroundStyle(Color.white)
+                    .offset(y: isPressed ? 3 : 0)
             }
+            .scaleEffect(isPulsing ? 1.02 : 1.0)
         }
         .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    withAnimation(.easeOut(duration: CuteClean.animationQuick)) {
+                        isPressed = true
+                    }
+                }
+                .onEnded { _ in
+                    withAnimation(.easeOut(duration: CuteClean.animationQuick)) {
+                        isPressed = false
+                    }
+                }
+        )
         .onAppear {
-            withAnimation(
-                .easeInOut(duration: 1.5)
-                .repeatForever(autoreverses: true)
-            ) {
+            // Gentle pulse animation to draw attention
+            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
                 isPulsing = true
             }
         }
@@ -53,7 +58,7 @@ public struct FloatingChatButton: View {
 
 #Preview {
     ZStack {
-        AppColors.gradientBackground
+        AppColors.bgCream
             .ignoresSafeArea()
 
         VStack {

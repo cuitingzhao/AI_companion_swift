@@ -13,6 +13,10 @@ final class HomeDailyTasksViewModel: ObservableObject {
     @Published var dailyFortune: DailyFortuneResponse?
     @Published var isFortuneLoading: Bool = false
     @Published var fortuneError: String?
+    
+    // MARK: - Fortune Cache Keys
+    private static let fortuneCacheKey = "cached_daily_fortune"
+    private static let fortuneCacheDateKey = "cached_daily_fortune_date"
 
     @Published var goalPlans: [GoalPlanResponse] = []
     @Published var isGoalPlanLoading: Bool = false
@@ -20,6 +24,35 @@ final class HomeDailyTasksViewModel: ObservableObject {
     
     @Published var showGoalWizard: Bool = false
     @Published var goalWizardSource: String? = "manual"
+    
+    @Published var weeklyCompletion: [DailyCompletionItem] = []
+    @Published var isWeeklyCompletionLoading: Bool = false
+    
+    /// Returns yesterday's task completion summary message
+    var yesterdaySummaryMessage: String? {
+        let calendar = Calendar.current
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: Date())!
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let yesterdayString = dateFormatter.string(from: yesterday)
+        
+        guard let yesterdayData = weeklyCompletion.first(where: { $0.date == yesterdayString }) else {
+            return nil
+        }
+        
+        // No tasks yesterday
+        if yesterdayData.totalTasks == 0 {
+            return nil
+        }
+        
+        // All tasks completed
+        if yesterdayData.completedTasks == yesterdayData.totalTasks {
+            return "昨天很棒！完成了所有任务呢🎉，今天继续加油🚀！"
+        }
+        
+        // Some tasks not completed
+        return "昨天有部分任务没完成呢😞，今天要加油哦💪！"
+    }
 
     init(userId: Int?) {
         self.userId = userId
@@ -34,6 +67,15 @@ final class HomeDailyTasksViewModel: ObservableObject {
             activeGoalIds.contains(item.goalId)
         }
     }
+    
+    /// Returns true if tasks were assigned today but all have been completed/cancelled
+    var allTasksCompleted: Bool {
+        guard let items = dailyPlan?.items, !items.isEmpty else { return false }
+        let activeGoalIds = Set(goalPlans.filter { $0.status == "active" }.map { $0.goalId })
+        let tasksForActiveGoals = items.filter { activeGoalIds.contains($0.goalId) }
+        // If there are tasks for active goals but none are pending, all are completed
+        return !tasksForActiveGoals.isEmpty && visibleTasks.isEmpty
+    }
 
     /// Returns only active goals
     var activeGoalPlans: [GoalPlanResponse] {
@@ -42,9 +84,16 @@ final class HomeDailyTasksViewModel: ObservableObject {
 
     func loadInitialDataIfNeeded() {
         guard isLoading else { return }
+        
+        // Load cached fortune immediately (synchronous)
+        loadCachedFortuneIfAvailable()
 
         Task {
             await fetchCalendarAndPlan()
+            // Also load goal plans so visibleTasks can filter properly
+            await loadGoalPlanIfNeeded()
+            // Fetch weekly completion for calendar widget
+            await loadWeeklyCompletion()
         }
     }
 
@@ -99,8 +148,64 @@ final class HomeDailyTasksViewModel: ObservableObject {
         isGoalPlanLoading = false
     }
 
+    /// Load cached fortune from UserDefaults if it's for today
+    func loadCachedFortuneIfAvailable() {
+        let today = todayDateString()
+        
+        // Check if cached fortune is for today
+        guard let cachedDate = UserDefaults.standard.string(forKey: Self.fortuneCacheDateKey),
+              cachedDate == today,
+              let cachedData = UserDefaults.standard.data(forKey: Self.fortuneCacheKey) else {
+            // No valid cache for today
+            return
+        }
+        
+        do {
+            let decoder = JSONDecoder()
+            let fortune = try decoder.decode(DailyFortuneResponse.self, from: cachedData)
+            dailyFortune = fortune
+            print("✅ Loaded cached fortune for today")
+        } catch {
+            print("❌ Failed to decode cached fortune:", error)
+            // Clear invalid cache
+            clearFortuneCache()
+        }
+    }
+    
+    /// Save fortune to UserDefaults cache
+    private func cacheFortuneData(_ fortune: DailyFortuneResponse) {
+        do {
+            let encoder = JSONEncoder()
+            let data = try encoder.encode(fortune)
+            UserDefaults.standard.set(data, forKey: Self.fortuneCacheKey)
+            UserDefaults.standard.set(fortune.context.solarDate, forKey: Self.fortuneCacheDateKey)
+            print("✅ Cached fortune for date:", fortune.context.solarDate)
+        } catch {
+            print("❌ Failed to cache fortune:", error)
+        }
+    }
+    
+    /// Clear fortune cache
+    private func clearFortuneCache() {
+        UserDefaults.standard.removeObject(forKey: Self.fortuneCacheKey)
+        UserDefaults.standard.removeObject(forKey: Self.fortuneCacheDateKey)
+    }
+    
+    /// Get today's date string in yyyy-MM-dd format
+    private func todayDateString() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: Date())
+    }
+    
+    /// Fetch daily fortune from backend (backend persists result for the day)
     func loadDailyFortuneIfNeeded() async {
         guard !isFortuneLoading else { return }
+        
+        // If we already have fortune loaded this session, skip
+        if dailyFortune != nil {
+            return
+        }
 
         guard let userId else {
             fortuneError = "系统暂时无法获取你的账户信息，今日运势暂时无法加载，请稍后再试。"
@@ -111,8 +216,11 @@ final class HomeDailyTasksViewModel: ObservableObject {
         fortuneError = nil
 
         do {
+            // Backend returns persisted fortune for today if already generated
             let response = try await FortuneAPI.shared.fetchDailyFortune(userId: userId)
             dailyFortune = response
+            // Cache the fortune for today
+            cacheFortuneData(response)
         } catch {
             print("❌ fetchDailyFortune error:", error)
             fortuneError = "暂时无法获取今日运势，请稍后再试。"
@@ -129,6 +237,66 @@ final class HomeDailyTasksViewModel: ObservableObject {
         } catch {
             print("❌ reloadPlanOnly error:", error)
             // actionError is owned by the view; surface a generic message here if needed.
+        }
+    }
+    
+    /// Load weekly completion data for calendar widget (current week: Mon-Sun)
+    func loadWeeklyCompletion() async {
+        guard !isWeeklyCompletionLoading else { return }
+        guard let userId else { return }
+        
+        isWeeklyCompletionLoading = true
+        
+        // Calculate current week's Monday and Sunday
+        let calendar = Calendar.current
+        let today = Date()
+        let weekday = calendar.component(.weekday, from: today)
+        // weekday: 1 = Sunday, 2 = Monday, ..., 7 = Saturday
+        // We want Monday as start of week
+        let daysFromMonday = (weekday + 5) % 7 // 0 for Monday, 6 for Sunday
+        
+        guard let monday = calendar.date(byAdding: .day, value: -daysFromMonday, to: today),
+              let sunday = calendar.date(byAdding: .day, value: 6 - daysFromMonday, to: today) else {
+            isWeeklyCompletionLoading = false
+            return
+        }
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let startDate = formatter.string(from: monday)
+        let endDate = formatter.string(from: sunday)
+        
+        do {
+            let response = try await ExecutionsAPI.shared.getCalendarCompletion(
+                userId: userId,
+                startDate: startDate,
+                endDate: endDate
+            )
+            weeklyCompletion = response.days
+        } catch {
+            print("❌ loadWeeklyCompletion error:", error)
+            // Silently fail - widget will show empty state
+        }
+        
+        isWeeklyCompletionLoading = false
+    }
+    
+    /// Assign tasks for today by calling the today-plan API
+    /// This generates TaskExecution records for the user's active goals
+    func assignTodayTasks() async {
+        guard let userId else {
+            print("❌ assignTodayTasks: No userId available")
+            return
+        }
+        
+        do {
+            // Calling fetchTodayPlan will generate task executions if they don't exist
+            let plan = try await GoalsAPI.shared.fetchTodayPlan(userId: userId)
+            dailyPlan = plan
+            print("✅ Tasks assigned for today, count:", plan.items.count)
+        } catch {
+            print("❌ assignTodayTasks error:", error)
+            loadError = "任务分配失败，请稍后再试。"
         }
     }
 }

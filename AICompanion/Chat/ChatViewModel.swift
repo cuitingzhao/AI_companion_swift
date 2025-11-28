@@ -74,34 +74,41 @@ class ChatViewModel: ObservableObject {
     
     // MARK: - Public Methods
     
+    /// Pre-warm the chat by starting to load data in background
+    /// Call this before user opens chat to reduce perceived loading time
+    func prewarm() {
+        guard !hasLoadedInitialHistory else { return }
+        print("🔥 Pre-warming chat data...")
+        loadInitialHistory()
+    }
+    
     func loadInitialHistory() {
         guard !hasLoadedInitialHistory else { return }
         hasLoadedInitialHistory = true
         
         Task {
-            // First, fetch personalized greeting
-            var greetingMessage: ChatMessage?
-            do {
-                let greetingResponse = try await ChatAPI.shared.fetchGreeting(userId: userId)
-                print("👋 Greeting fetched: \(greetingResponse.greeting)")
-                greetingMessage = ChatMessage(text: greetingResponse.greeting, sender: .ai)
-            } catch {
-                print("❌ Failed to fetch greeting:", error)
-                // Fallback to default greeting
-                let fallbackText = "你好！有什么我可以帮你的吗？"
-                greetingMessage = ChatMessage(text: fallbackText, sender: .ai)
-            }
+            // Fetch greeting and history in parallel for faster loading
+            async let greetingTask: ChatMessage? = {
+                do {
+                    let greetingResponse = try await ChatAPI.shared.fetchGreeting(userId: self.userId)
+                    print("👋 Greeting fetched: \(greetingResponse.greeting)")
+                    return ChatMessage(text: greetingResponse.greeting, sender: .ai)
+                } catch {
+                    print("❌ Failed to fetch greeting:", error)
+                    return ChatMessage(text: "你好！有什么我可以帮你的吗？", sender: .ai)
+                }
+            }()
             
-            // Then load chat history
-            await loadHistory(beforeId: nil)
+            async let historyTask: Void = loadHistory(beforeId: nil)
+            
+            // Wait for both to complete
+            let (greetingMessage, _) = await (greetingTask, historyTask)
             
             // Add date divider if there's history (between history and new greeting)
-            // Use first message's timestamp since history is returned newest-first
             if let newestHistoryMessage = messages.first, let lastDate = newestHistoryMessage.createdAt {
                 print("📅 Adding date divider after history, newest message date: \(lastDate)")
                 messages.append(ChatMessage.divider(date: lastDate))
             } else if !messages.isEmpty {
-                // If history exists but no timestamp, use current time as fallback
                 print("📅 Adding date divider with current time (no timestamp in history)")
                 messages.append(ChatMessage.divider(date: Date()))
             } else {
@@ -328,22 +335,34 @@ class ChatViewModel: ObservableObject {
     
     // MARK: - Helpers
     
-    /// Parses ISO 8601 date string from backend
-    private func parseISO8601Date(_ dateString: String) -> Date? {
+    // Cached date formatters for performance
+    private static let iso8601FormatterWithFractional: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = formatter.date(from: dateString) {
-            return date
-        }
-        // Try without fractional seconds
+        return formatter
+    }()
+    
+    private static let iso8601FormatterBasic: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime]
-        if let date = formatter.date(from: dateString) {
+        return formatter
+    }()
+    
+    private static let simpleDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        return formatter
+    }()
+    
+    /// Parses ISO 8601 date string from backend using cached formatters
+    private func parseISO8601Date(_ dateString: String) -> Date? {
+        if let date = Self.iso8601FormatterWithFractional.date(from: dateString) {
             return date
         }
-        // Try simple format without timezone
-        let simpleFormatter = DateFormatter()
-        simpleFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
-        return simpleFormatter.date(from: dateString)
+        if let date = Self.iso8601FormatterBasic.date(from: dateString) {
+            return date
+        }
+        return Self.simpleDateFormatter.date(from: dateString)
     }
 }
 

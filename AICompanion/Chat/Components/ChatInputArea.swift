@@ -1,5 +1,6 @@
 import SwiftUI
 
+// MARK: - Cute Clean Chat Input Area
 struct ChatInputArea: View {
     @Binding var draftMessage: String
     @Binding var inputMode: ChatViewInputMode
@@ -30,13 +31,19 @@ struct ChatInputArea: View {
                     )
                 }
                 
+                // Cute Clean: Circular toggle button with soft colors
                 Button(action: onToggleInputMode) {
-                    Image(systemName: inputMode == .text ? "mic.fill" : "keyboard")
-                        .font(.system(size: 20))
-                        .foregroundStyle(AppColors.purple)
+                    Image(systemName: inputMode == .text ? "mic.fill" : "keyboard.fill")
+                        .font(.system(size: 18, weight: .medium, design: .rounded))
+                        .foregroundStyle(inputMode == .text ? AppColors.cuteCoral : AppColors.neoPurple)
+                        .frame(width: 44, height: 44)
+                        .background(inputMode == .text ? AppColors.cutePeach : AppColors.bgMintLight)
+                        .clipShape(Circle())
+                        .shadow(color: AppColors.shadowColor, radius: 4, x: 0, y: 2)
                 }
             }
         }
         .disabled(isSending)
+        .opacity(isSending ? 0.6 : 1)
     }
 }

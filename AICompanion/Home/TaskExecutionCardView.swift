@@ -4,6 +4,9 @@ struct TaskExecutionCardView: View {
     let task: DailyTaskItemResponse
     let width: CGFloat
     let onAction: (HomeDailyTasksView.ExecutionAction) -> Void
+    // Callbacks for full-screen confirmation dialogs
+    var onRequestComplete: (() -> Void)?
+    var onRequestDelete: (() -> Void)?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -31,11 +34,19 @@ struct TaskExecutionCardView: View {
 
                 HStack(spacing: 32) {
                     actionButton(color: .red, systemImage: "minus", label: "删除") {
-                        onAction(.cancel)
+                        if let onRequestDelete {
+                            onRequestDelete()
+                        } else {
+                            onAction(.cancel)
+                        }
                     }
 
                     actionButton(color: .green, systemImage: "checkmark", label: "完成") {
-                        onAction(.complete)
+                        if let onRequestComplete {
+                            onRequestComplete()
+                        } else {
+                            onAction(.complete)
+                        }
                     }
 
                     let canPostpone = !(task.frequency == "daily" || task.frequency == "weekdays")

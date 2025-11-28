@@ -41,4 +41,33 @@ public final class ExecutionsAPI {
         let decoder = JSONDecoder()
         return try decoder.decode(ExecutionUpdateResponse.self, from: data)
     }
+
+    public func getCalendarCompletion(userId: Int, startDate: String, endDate: String) async throws -> CalendarCompletionResponse {
+        var components = URLComponents()
+        components.scheme = baseURL.scheme
+        components.host = baseURL.host
+        components.port = baseURL.port
+        components.path = "/api/v1/executions/calendar/completion"
+        components.queryItems = [
+            URLQueryItem(name: "user_id", value: String(userId)),
+            URLQueryItem(name: "start_date", value: startDate),
+            URLQueryItem(name: "end_date", value: endDate)
+        ]
+
+        guard let url = components.url else {
+            throw ExecutionsAPIError.invalidURL
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "GET"
+
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw ExecutionsAPIError.badResponse
+        }
+
+        let decoder = JSONDecoder()
+        return try decoder.decode(CalendarCompletionResponse.self, from: data)
+    }
 }

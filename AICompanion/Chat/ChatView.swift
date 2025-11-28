@@ -8,7 +8,7 @@ import UIKit
 public struct ChatView: View {
     private let userId: Int
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var viewModel: ChatViewModel
+    @ObservedObject private var viewModel: ChatViewModel
     
     @State private var keyboardHeight: CGFloat = 0
     
@@ -16,9 +16,16 @@ public struct ChatView: View {
     @State private var scrollProxy: ScrollViewProxy? = nil
     private let loadingIndicatorId = "loading-indicator"
     
+    /// Initialize with a pre-warmed viewModel for faster loading
+    init(viewModel: ChatViewModel) {
+        self.userId = viewModel.userId
+        self.viewModel = viewModel
+    }
+    
+    /// Initialize with userId - creates a new viewModel
     public init(userId: Int) {
         self.userId = userId
-        self._viewModel = StateObject(wrappedValue: ChatViewModel(userId: userId))
+        self.viewModel = ChatViewModel(userId: userId)
     }
     
     public var body: some View {
@@ -26,26 +33,24 @@ public struct ChatView: View {
             let safeAreaBottom = geometry.safeAreaInsets.bottom
             
             ZStack(alignment: .top) {
-                AppColors.gradientBackground
-                    .ignoresSafeArea()
-                
-                Image("star_bg")
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                    .clipped()
-                    .ignoresSafeArea()
-                    .opacity(0.6)
+                // Finch-inspired: Warm cream to light sage gradient
+                LinearGradient(
+                    colors: [AppColors.bgCream, AppColors.bgSageLight],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
                     ChatHeader()
                     
-                    // White card container matching OnboardingScaffold style
+                    // Mascot GIF above chat body
+                    GIFImage(name: "winking")
+                        .frame(width: 180, height: 100)
+                        .frame(maxWidth: .infinity)
+                    
+                    // Finch-inspired: Clean content area
                     ZStack(alignment: .top) {
-                        RoundedRectangle(cornerRadius: 28)
-                            .fill(Color.white)
-                            .shadow(color: Color.black.opacity(0.06), radius: 20, x: 0, y: 8)
-                        
                         if viewModel.isInitialLoading {
                             // Loading state while fetching greeting
                             VStack(spacing: 16) {
@@ -105,6 +110,7 @@ public struct ChatView: View {
                                         .padding(.vertical, 8)
                                     }
                                     .onChange(of: viewModel.messages.count) { _, _ in
+                                        // Single scroll handler for all message changes
                                         scrollToBottom(proxy: proxy)
                                     }
                                     .onChange(of: viewModel.isSending) { _, newValue in
@@ -119,16 +125,20 @@ public struct ChatView: View {
                                     }
                                     .onAppear {
                                         scrollProxy = proxy
-                                        // Scroll to bottom on initial appear (after messages are loaded)
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                            scrollToBottom(proxy: proxy)
+                                        // Scroll to bottom on appear (handles pre-warmed case)
+                                        if !viewModel.isInitialLoading {
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                                scrollToBottom(proxy: proxy)
+                                            }
                                         }
                                     }
-                                    .task {
-                                        // Wait for initial loading to complete, then scroll
-                                        // This handles the case where messages are loaded before onAppear
-                                        try? await Task.sleep(nanoseconds: 300_000_000) // 0.3s
-                                        scrollToBottom(proxy: proxy)
+                                    .onChange(of: viewModel.isInitialLoading) { _, isLoading in
+                                        // Scroll to bottom when initial loading completes
+                                        if !isLoading {
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                                scrollToBottom(proxy: proxy)
+                                            }
+                                        }
                                     }
                                 }
                                 

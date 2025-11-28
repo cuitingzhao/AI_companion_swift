@@ -201,3 +201,33 @@ public struct ExecutionUpdateResponse: Codable {
     public let status: String
     public let message: String
 }
+
+// MARK: - Calendar Completion
+
+public struct DailyCompletionItem: Codable {
+    public let date: String
+    public let totalTasks: Int
+    public let completedTasks: Int
+    public let completionRate: Double
+
+    enum CodingKeys: String, CodingKey {
+        case date
+        case totalTasks = "total_tasks"
+        case completedTasks = "completed_tasks"
+        case completionRate = "completion_rate"
+    }
+}
+
+public struct CalendarCompletionResponse: Codable {
+    public let userId: Int
+    public let startDate: String
+    public let endDate: String
+    public let days: [DailyCompletionItem]
+
+    enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
+        case startDate = "start_date"
+        case endDate = "end_date"
+        case days
+    }
+}

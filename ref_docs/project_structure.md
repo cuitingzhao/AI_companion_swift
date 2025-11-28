@@ -17,15 +17,17 @@ AICompanion/
 |   |   |-- FortuneModels.swift (daily fortune response models)
 |   |   |-- ChatModels.swift (chat API request/response models)
 |   |-- DesignSystem/
-|   |   |-- Colors.swift
-|   |   |-- Fonts.swift
+|   |   |-- Colors.swift (Neobrutalism color palette)
+|   |   |-- Fonts.swift (Bold typography for Neobrutalism)
+|   |   |-- NeoBrutalModifiers.swift (Reusable view modifiers for borders/shadows)
 |   |   |-- Components/
-|   |       |-- PrimaryButton.swift
-|   |       |-- AppTextField.swift
+|   |       |-- PrimaryButton.swift (Neobrutalist button with hard shadow)
+|   |       |-- AppTextField.swift (Neobrutalist text field)
 |   |       |-- VoiceInputButton.swift
 |   |       |-- AppDialog.swift
 |   |       |-- FloatingChatButton.swift (floating action button for chat)
-|   |       |-- Toast.swift (toast notification component)
+|   |       |-- Toast.swift (Neobrutalist toast notification)
+|   |       |-- GIFImage.swift (animated GIF display component)
 |   |
 |   |-- Networking/
 |   |   |-- CitiesAPI.swift
@@ -71,7 +73,7 @@ AICompanion/
 |   |   |-- GoalWizard/
 |   |   |   |-- GoalWizardView.swift (standalone goal creation wizard triggered from chat)
 |   |   |-- DailyTasks/
-|   |   |   |-- DailyTasksPageView.swift (page body for "每日待办" tab)
+|   |   |   |-- DailyTasksPageView.swift (page body for "每日待办" tab, includes WeeklyCalendarWidget)
 |   |   |   |-- TaskForTodayView.swift (widget for today's tasks)
 |   |   |-- GoalTracking/
 |   |   |   |-- GoalTrackingPageView.swift (page body for "目标追踪" tab)

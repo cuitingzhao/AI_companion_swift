@@ -3,22 +3,29 @@ import SwiftUI
 public struct HomeDailyTasksView: View {
     private let userId: Int?
     @StateObject private var viewModel: HomeDailyTasksViewModel
+    @StateObject private var chatViewModel: ChatViewModel
     @State private var isUpdatingExecution: Bool = false
     @State private var actionError: String?
     @State private var selectedTaskForDetail: DailyTaskItemResponse?
-    @State private var isShowingFortuneCard: Bool = false
-    @State private var isFortuneGlowActive: Bool = false
     @State private var selectedTab: Tab = .daily
     @State private var isShowingChat: Bool = false
+    @State private var isAssigningTasks: Bool = false
+    
+    // Confirmation dialog state (for full-screen mask)
+    @State private var showCompleteConfirmation: Bool = false
+    @State private var showDeleteConfirmation: Bool = false
+    @State private var taskForConfirmation: DailyTaskItemResponse?
 
     public init(userId: Int?) {
         self.userId = userId
+        let uid = userId ?? 0
         _viewModel = StateObject(wrappedValue: HomeDailyTasksViewModel(userId: userId))
+        _chatViewModel = StateObject(wrappedValue: ChatViewModel(userId: uid))
     }
 
     public var body: some View {
         ZStack {
-            AppColors.gradientBackground
+            AppColors.accentYellow
                 .ignoresSafeArea()
 
             // Image("star_bg")
@@ -28,14 +35,17 @@ public struct HomeDailyTasksView: View {
             //     .opacity(0.5)
 
             VStack(spacing: 0) {
+                // Finch-inspired: Transparent header (no background)
                 currentHeaderView
                     .padding(.horizontal, 24)
-                    .padding(.top, 24)
-                    .padding(.bottom, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 12)
 
+                // Content area with sage green background
                 ZStack {
-                    // AppColors.lavender.opacity(0.1)
-                    //     .ignoresSafeArea(edges: .bottom)
+                    // Sage green content background
+                    AppColors.gradientBackground
+                        .ignoresSafeArea(edges: .bottom)
 
                     ScrollView {
                         VStack(spacing: 24) {
@@ -46,16 +56,32 @@ public struct HomeDailyTasksView: View {
                                     isLoading: viewModel.isLoading,
                                     tasks: viewModel.visibleTasks,
                                     actionError: actionError,
+                                    hasActiveGoals: !viewModel.activeGoalPlans.isEmpty,
+                                    isAssigningTasks: isAssigningTasks,
+                                    allTasksCompleted: viewModel.allTasksCompleted,
+                                    weeklyCompletion: viewModel.weeklyCompletion,
                                     onTaskTapped: { task in
                                         selectedTaskForDetail = task
                                     },
                                     onQuickComplete: { task in
                                         handleExecutionAction(.complete, for: task)
+                                    },
+                                    onAssignTasks: {
+                                        isAssigningTasks = true
+                                        Task {
+                                            await viewModel.assignTodayTasks()
+                                            isAssigningTasks = false
+                                        }
+                                    },
+                                    onRequestComplete: { task in
+                                        taskForConfirmation = task
+                                        showCompleteConfirmation = true
                                     }
                                 )
                             case .goals:
                                 GoalTrackingPageView(
                                     plans: viewModel.activeGoalPlans,
+                                    dailyTasks: viewModel.dailyPlan?.items ?? [],
                                     isLoading: viewModel.isGoalPlanLoading,
                                     errorText: viewModel.goalPlanError,
                                     onAddGoal: {
@@ -71,7 +97,10 @@ public struct HomeDailyTasksView: View {
                         .padding(.vertical, 24)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                }.padding(.horizontal, 24)
+                }
+                // .clipShape(
+                //     RoundedCorner(radius: CuteClean.radiusLarge, corners: [.topLeft, .topRight])
+                // )
 
                 bottomTabBar
             }
@@ -111,6 +140,16 @@ public struct HomeDailyTasksView: View {
                             onAction: { action in
                                 handleExecutionAction(action, for: selectedTask)
                                 selectedTaskForDetail = nil
+                            },
+                            onRequestComplete: {
+                                taskForConfirmation = selectedTask
+                                showCompleteConfirmation = true
+                                selectedTaskForDetail = nil
+                            },
+                            onRequestDelete: {
+                                taskForConfirmation = selectedTask
+                                showDeleteConfirmation = true
+                                selectedTaskForDetail = nil
                             }
                         )
                         Spacer()
@@ -121,41 +160,73 @@ public struct HomeDailyTasksView: View {
                 .padding(.vertical, 20)
             }
 
-            if isShowingFortuneCard {
-                Color.black.opacity(0.24)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        isShowingFortuneCard = false
-                    }
-
+            // Floating mascot chat button (hidden on Goals tab)
+            if selectedTab != .goals {
                 VStack {
-                    DailyFortuneCardView(
-                        isLoading: viewModel.isFortuneLoading,
-                        fortune: viewModel.dailyFortune,
-                        errorText: viewModel.fortuneError
-                    )
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 24)
-            }
-
-            // Floating chat button
-            VStack {
-                Spacer()
-                HStack {
                     Spacer()
-                    FloatingChatButton {
-                        isShowingChat = true
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            isShowingChat = true
+                        }) {
+                            VStack(spacing: 4) {
+                                GIFImage(name: "singing")
+                                    .frame(width: 120, height: 120)
+                                    .allowsHitTesting(false)
+                                Text("点我聊天")
+                                    .font(AppFonts.caption)
+                                    .foregroundStyle(AppColors.textMedium)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.trailing, 24)
+                        .padding(.bottom, 100)
                     }
-                    .padding(.trailing, 24)
-                    .padding(.bottom, 100)
                 }
             }
+            
+            // Full-screen confirmation dialogs
+            AppDialog(
+                isPresented: $showCompleteConfirmation,
+                message: "确定要完成「\(taskForConfirmation?.title ?? "")」吗？",
+                primaryTitle: "确认完成",
+                primaryAction: {
+                    if let task = taskForConfirmation {
+                        handleExecutionAction(.complete, for: task)
+                    }
+                    showCompleteConfirmation = false
+                    taskForConfirmation = nil
+                },
+                secondaryTitle: "取消",
+                secondaryAction: {
+                    showCompleteConfirmation = false
+                    taskForConfirmation = nil
+                },
+                title: "完成任务"
+            )
+            
+            AppDialog(
+                isPresented: $showDeleteConfirmation,
+                message: "确定要删除「\(taskForConfirmation?.title ?? "")」吗？删除后无法恢复。",
+                primaryTitle: "确认删除",
+                primaryAction: {
+                    if let task = taskForConfirmation {
+                        handleExecutionAction(.cancel, for: task)
+                    }
+                    showDeleteConfirmation = false
+                    taskForConfirmation = nil
+                },
+                secondaryTitle: "取消",
+                secondaryAction: {
+                    showDeleteConfirmation = false
+                    taskForConfirmation = nil
+                },
+                title: "删除任务"
+            )
         }
         .fullScreenCover(isPresented: $isShowingChat) {
-            if let userId = userId {
-                ChatView(userId: userId)
-            }
+            ChatView(viewModel: chatViewModel)
         }
         .fullScreenCover(isPresented: $viewModel.showGoalWizard) {
             if let userId = userId {
@@ -174,7 +245,11 @@ public struct HomeDailyTasksView: View {
                 )
             }
         }
-        .onAppear(perform: viewModel.loadInitialDataIfNeeded)
+        .onAppear {
+            viewModel.loadInitialDataIfNeeded()
+            // Pre-warm chat data in background for faster chat opening
+            chatViewModel.prewarm()
+        }
         .onChange(of: selectedTab) { _, newTab in
             switch newTab {
             case .goals:
@@ -205,140 +280,129 @@ public struct HomeDailyTasksView: View {
         }
     }
 
+    // Time-based greeting
+    private var timeBasedGreeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 5..<12:
+            return "早上好"
+        case 12..<14:
+            return "中午好"
+        case 14..<18:
+            return "下午好"
+        default:
+            return "晚上好"
+        }
+    }
+    
+    // Get nickname from UserDefaults
+    private var userNickname: String {
+        UserDefaults.standard.string(forKey: "onboarding.nickname") ?? ""
+    }
+    
     private var headerView: some View {
         let info = viewModel.calendarInfo
+        let fortune = viewModel.dailyFortune
 
-        return HStack(alignment: .top, spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
-                if let info {
-                    Text(formattedSolarDate(info.solarDate))
-                        .font(AppFonts.large)
-                        .foregroundStyle(AppColors.textBlack)
-
-                    Text("农历: \(info.lunarDate)")
-                        .font(AppFonts.caption)
-                        .foregroundStyle(AppColors.neutralGray)
-
-                    if let current = info.currentJieqi, !current.isEmpty {
-                        Text("当前节气：\(current)")
-                            .font(AppFonts.caption)
-                            .foregroundStyle(AppColors.neutralGray)
-                    }
-
-                    if let next = info.nextJieqi {
-                        if let days = daysUntil(next.solarDate, from: info.solarDate), days > 0 {
-                            Text("下一个节气：\(next.name)（还有\(days)天）")
-                                .font(AppFonts.caption)
-                                .foregroundStyle(AppColors.neutralGray)
-                        } else {
-                            Text("下一个节气：\(next.name)（就在今天）")
-                                .font(AppFonts.caption)
-                                .foregroundStyle(AppColors.neutralGray)
+        return VStack(alignment: .leading, spacing: 12) {
+            // Greeting title
+            Text("\(timeBasedGreeting)，\(userNickname)")
+                .font(AppFonts.large)
+                .foregroundStyle(AppColors.textBlack)
+            
+            // Yesterday's task summary
+            if let summaryMessage = viewModel.yesterdaySummaryMessage {
+                Text(summaryMessage)
+                    .font(AppFonts.caption)
+                    .foregroundStyle(AppColors.textMedium)
+            }
+            
+            // Date subtitle
+            if let info {
+                Text("\(formattedSolarDate(info.solarDate))｜农历\(info.lunarDate)")
+                    .font(AppFonts.caption)
+                    .foregroundStyle(AppColors.textMedium)
+            }
+            
+            // Fortune guide container
+            VStack(spacing: 12) {
+                if let fortune, fortune.color != nil || fortune.food != nil || fortune.direction != nil {
+                    // Show fortune data
+                    HStack(alignment: .top, spacing: 16) {
+                        if let color = fortune.color {
+                            fortuneInfoItem(icon: "paintpalette.fill", label: "幸运颜色", value: color)
+                        }
+                        if let food = fortune.food {
+                            fortuneInfoItem(icon: "leaf.fill", label: "幸运食材", value: food)
+                        }
+                        if let direction = fortune.direction {
+                            fortuneInfoItem(icon: "location.north.fill", label: "幸运方位", value: direction)
                         }
                     }
                 } else {
-                    Text("今日运势与日程")
-                        .font(AppFonts.large)
+                    // Show button to fetch fortune
+                    Button(action: {
+                        Task {
+                            await viewModel.loadDailyFortuneIfNeeded()
+                        }
+                    }) {
+                        HStack(spacing: 8) {
+                            if viewModel.isFortuneLoading {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                    .tint(AppColors.primary)
+                            } else {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 14, weight: .medium))
+                            }
+                            Text("点击获取今日提运指南")
+                                .font(AppFonts.cuteButton)
+                        }
+                        .foregroundStyle(AppColors.primary)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(viewModel.isFortuneLoading)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .padding(.horizontal, 16)
+            .background(AppColors.cardWhite)
+            .cornerRadius(CuteClean.radiusMedium)
+            .shadow(color: AppColors.shadowColor, radius: 4, x: 0, y: 2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 16)
+    }
+    
+    private func fortuneInfoItem(icon: String, label: String, value: String) -> some View {
+        // Split comma-separated values into separate lines
+        let values = value
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        
+        return VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundStyle(AppColors.primary)
+            Text(label)
+                .font(AppFonts.caption)
+                .foregroundStyle(AppColors.textLight)
+            VStack(spacing: 2) {
+                ForEach(values, id: \.self) { item in
+                    Text(item)
+                        .font(AppFonts.small)
                         .foregroundStyle(AppColors.textBlack)
                 }
             }
-
-            Spacer(minLength: 12)
-
-            fortuneHeaderIcon
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 24)
-        .padding(.vertical, 20)
+        .frame(maxWidth: .infinity)
     }
 
     private var goalTrackingHeaderView: some View {
-        HStack(alignment: .center, spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("目标追踪")
-                    .font(AppFonts.large)
-                    .foregroundStyle(AppColors.textBlack)
-
-                Text("查看你的长期目标和关键里程碑")
-                    .font(AppFonts.caption)
-                    .foregroundStyle(AppColors.neutralGray)
-            }
-
-            Spacer(minLength: 12)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    @ViewBuilder
-    private var fortuneHeaderIcon: some View {
-        let symbol: String? = viewModel.dailyFortune?.fortuneLevel
-        let outerColor = fortuneOuterColor(for: symbol)
-
-        Button {
-            isShowingFortuneCard = true
-
-            if viewModel.dailyFortune == nil {
-                Task {
-                    await viewModel.loadDailyFortuneIfNeeded()
-                }
-            }
-        } label: {
-            VStack(spacing: 6) {
-                ZStack {
-                    if symbol == nil {
-                        Circle()
-                            .stroke(AppColors.purple.opacity(0.65), lineWidth: 5)
-                            .frame(width: 92, height: 92)
-                            .scaleEffect(isFortuneGlowActive ? 1.06 : 0.92)
-                            .blur(radius: 4)
-                            .animation(
-                                .easeInOut(duration: 1.1)
-                                    .repeatForever(autoreverses: true),
-                                value: isFortuneGlowActive
-                            )
-
-                        Image("fortune_wheel_small")
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 84, height: 84)
-                            .clipShape(Circle())
-                            .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 6)
-                    } else {
-                        Circle()
-                            .fill(outerColor)
-                            .frame(width: 84, height: 84)
-                            .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 6)
-                    }
-
-                    Circle()
-                        .stroke(AppColors.white, lineWidth: 2)
-                        .frame(width: 72, height: 72)
-
-                    if let symbol {
-                        Text(symbol)
-                            .font(AppFonts.subtitle)
-                            .foregroundStyle(AppColors.white)
-                    }
-                }
-
-                if symbol == nil {
-                    VStack(spacing: 2) {
-                        Text("点击查看")
-                            .font(AppFonts.caption)
-                        Text("今日运势")
-                            .font(AppFonts.caption)
-                    }
-                    .foregroundStyle(AppColors.purple)
-                }
-            }
-        }
-        .buttonStyle(.plain)
-        .offset(y: -8)
-        .onAppear {
-            if !isFortuneGlowActive {
-                isFortuneGlowActive = true
-            }
-        }
+        // No header needed for goal tracking tab - content speaks for itself
+        EmptyView()
     }
 
     @ViewBuilder
@@ -377,45 +441,49 @@ public struct HomeDailyTasksView: View {
         }
     }
 
-    // MARK: - Bottom Tab Bar
+    // MARK: - Bottom Tab Bar (Finch-Inspired)
 
     private var bottomTabBar: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 8) {
             bottomTabItem(icon: "checkmark.circle.fill", label: "每日待办", tab: .daily)
             bottomTabItem(icon: "target", label: "目标追踪", tab: .goals)
             // Hidden for now - feature not ready
             // bottomTabItem(icon: "sparkles", label: "流年推测", tab: .fortune)
             // bottomTabItem(icon: "person.crop.circle", label: "性格密码", tab: .personality)
-            bottomTabItem(icon: "gearshape", label: "设置", tab: .settings)
+            bottomTabItem(icon: "gearshape.fill", label: "设置", tab: .settings)
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 10)
-        .padding(.bottom, 10)
-        .background(
-            Color.white.opacity(0.95)
-                .ignoresSafeArea(edges: .bottom)
-        )
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
+        .padding(.bottom, 12)
+        .background(AppColors.cardWhite)
+        .shadow(color: AppColors.shadowColor, radius: 6, x: 0, y: -2)
     }
 
     private func bottomTabItem(icon: String, label: String, tab: Tab) -> some View {
         let isActive = selectedTab == tab
 
         return Button(action: {
-            selectedTab = tab
+            withAnimation(.easeOut(duration: CuteClean.animationQuick)) {
+                selectedTab = tab
+            }
         }) {
             VStack(spacing: 4) {
                 Image(systemName: icon)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(isActive ? Color.white : AppColors.purple.opacity(0.55))
-                    .frame(width: 32, height: 32)
-                    .background(isActive ? AppColors.purple : Color.clear)
-                    .clipShape(Circle())
+                    .font(.system(size: 22, weight: .medium, design: .rounded))
+                    .foregroundStyle(isActive ? AppColors.primary : AppColors.textMedium)
 
                 Text(label)
                     .font(AppFonts.caption)
-                    .foregroundStyle(isActive ? AppColors.purple : AppColors.neutralGray)
+                    .foregroundStyle(isActive ? AppColors.primary : AppColors.textLight)
+                
+                // Finch-style pill indicator
+                Capsule()
+                    .fill(isActive ? AppColors.primary : Color.clear)
+                    .frame(width: 24, height: 4)
+                    .offset(y: 2)
             }
             .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
         }
         .buttonStyle(.plain)
     }
@@ -479,19 +547,6 @@ public struct HomeDailyTasksView: View {
     }
 
     // MARK: - Helpers
-
-    private func fortuneOuterColor(for symbol: String?) -> Color {
-        switch symbol {
-        case "吉":
-            return AppColors.gold
-        case "平":
-            return AppColors.jade
-        case "凶":
-            return AppColors.textBlack
-        default:
-            return AppColors.white.opacity(0.9)
-        }
-    }
 
     private func formattedSolarDate(_ dateString: String) -> String {
         let formatter = DateFormatter()

@@ -1,5 +1,6 @@
 import SwiftUI
 
+// MARK: - Cute Clean Text Field
 public struct AppTextField<Accessory: View>: View {
     private let title: String
     private let text: Binding<String>
@@ -24,12 +25,12 @@ public struct AppTextField<Accessory: View>: View {
     public var body: some View {
         HStack(spacing: 12) {
             TextField("", text: text)
-                .font(AppFonts.small)
-                .foregroundStyle(AppColors.textBlack)
+                .font(AppFonts.body)
+                .foregroundStyle(AppColors.textDark)
                 .placeholder(when: text.wrappedValue.isEmpty) {
                     Text(title)
-                        .foregroundStyle(AppColors.neutralGray)
-                        .font(AppFonts.small)
+                        .foregroundStyle(AppColors.textLight)
+                        .font(AppFonts.body)
                 }
                 .submitLabel(submitLabel ?? .done)
                 .onSubmit {
@@ -38,11 +39,14 @@ public struct AppTextField<Accessory: View>: View {
 
             accessory
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .background(AppColors.bgCream)
+        .cornerRadius(CuteClean.radiusMedium)
+        // Cute Clean: No shadow, subtle border only
         .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(AppColors.textBlack, lineWidth: 1)
+            RoundedRectangle(cornerRadius: CuteClean.radiusMedium)
+                .stroke(AppColors.cutePink.opacity(0.2), lineWidth: 1)
         )
     }
 }

@@ -17,9 +17,17 @@ public enum ToastType {
 
     var color: Color {
         switch self {
-        case .success: return Color.green
-        case .error: return Color.red
-        case .info: return AppColors.purple
+        case .success: return AppColors.neoGreen
+        case .error: return AppColors.neoRed
+        case .info: return AppColors.neoPurple
+        }
+    }
+    
+    var backgroundColor: Color {
+        switch self {
+        case .success: return AppColors.bgMint
+        case .error: return AppColors.lightRed
+        case .info: return AppColors.bgLavender
         }
     }
 }
@@ -45,12 +53,12 @@ public struct ToastView: View {
     public var body: some View {
         HStack(spacing: 12) {
             Image(systemName: toast.type.icon)
-                .font(.system(size: 20))
+                .font(.system(size: 20, weight: .bold))
                 .foregroundColor(toast.type.color)
 
             Text(toast.message)
                 .font(AppFonts.body)
-                .foregroundColor(AppColors.textBlack)
+                .foregroundColor(AppColors.neoBlack)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
 
@@ -58,11 +66,13 @@ public struct ToastView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+        .background(toast.type.backgroundColor)
+        .cornerRadius(NeoBrutal.radiusMedium)
+        .overlay(
+            RoundedRectangle(cornerRadius: NeoBrutal.radiusMedium)
+                .stroke(AppColors.neoBlack, lineWidth: NeoBrutal.borderNormal)
         )
+        .shadow(color: AppColors.shadowColor, radius: 0, x: 4, y: 4)
         .padding(.horizontal, 24)
     }
 }

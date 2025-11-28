@@ -22,6 +22,10 @@ public struct GoalWizardView: View {
     @State private var currentGoalId: Int?
     @State private var goalPlan: GoalPlanResponse?
     
+    // State for "start today or later" dialog
+    @State private var showStartPrompt: Bool = false
+    @State private var isAssigningTasks: Bool = false
+    
     public init(userId: Int, candidateDescription: String? = nil, source: String? = nil, onDismiss: @escaping () -> Void) {
         self.userId = userId
         self.candidateDescription = candidateDescription
@@ -55,7 +59,8 @@ public struct GoalWizardView: View {
     
     public var body: some View {
         ZStack(alignment: .top) {
-            AppColors.gradientBackground
+            // Neobrutalism: Solid background
+            AppColors.bgMint
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
@@ -81,23 +86,29 @@ public struct GoalWizardView: View {
             }
         }
         .overlay(loadingOverlay)
+        .overlay(startPromptOverlay)
     }
     
     private var header: some View {
         HStack {
             Text("创建新目标")
-                .font(AppFonts.large)
-                .foregroundStyle(AppColors.textBlack)
+                .font(AppFonts.neoHeadline)
+                .foregroundStyle(AppColors.neoBlack)
             
             Spacer()
             
+            // Neobrutalism: Square close button
             Button(action: onDismiss) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(AppColors.neutralGray)
-                    .padding(8)
-                    .background(Color.white)
-                    .clipShape(Circle())
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(AppColors.neoBlack)
+                    .padding(10)
+                    .background(AppColors.neoWhite)
+                    .cornerRadius(NeoBrutal.radiusSmall)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: NeoBrutal.radiusSmall)
+                            .stroke(AppColors.neoBlack, lineWidth: NeoBrutal.borderThin)
+                    )
             }
         }
         .padding(24)
@@ -119,9 +130,13 @@ public struct GoalWizardView: View {
                 .padding(.horizontal, 24)
                 .padding(.bottom, 16)
         }
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 24))
-        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: -5)
+        .background(AppColors.neoWhite)
+        .cornerRadius(NeoBrutal.radiusLarge)
+        .overlay(
+            RoundedRectangle(cornerRadius: NeoBrutal.radiusLarge)
+                .stroke(AppColors.neoBlack, lineWidth: NeoBrutal.borderNormal)
+        )
+        .shadow(color: AppColors.shadowColor, radius: 0, x: 6, y: 6)
         .padding(.horizontal, 24)
         .padding(.bottom, 28)
     }
@@ -198,44 +213,47 @@ public struct GoalWizardView: View {
                 Color.black.opacity(0.25)
                     .ignoresSafeArea()
                 
+                // Neobrutalism: Loading overlay card
                 VStack(spacing: 12) {
                     ProgressView()
-                        .tint(AppColors.purple)
+                        .tint(AppColors.neoPurple)
                     
                     Text(isAutoContinuingPlanGeneration ? "正在根据目标创建计划，请稍候" : "正在制定计划详情")
                         .font(AppFonts.body)
-                        .foregroundStyle(AppColors.textBlack)
+                        .foregroundStyle(AppColors.neoBlack)
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 20)
-                .background(Color.white)
-                .cornerRadius(18)
-                .shadow(color: Color.black.opacity(0.1), radius: 16, x: 0, y: 6)
+                .background(AppColors.neoWhite)
+                .cornerRadius(NeoBrutal.radiusMedium)
+                .overlay(
+                    RoundedRectangle(cornerRadius: NeoBrutal.radiusMedium)
+                        .stroke(AppColors.neoBlack, lineWidth: NeoBrutal.borderNormal)
+                )
+                .shadow(color: AppColors.shadowColor, radius: 0, x: 5, y: 5)
             }
         }
     }
     
+    // Neobrutalism: Chunky progress bar with border
     private func progressBar(progress: Double) -> some View {
         let clamped = max(0, min(1, progress))
         
         return ZStack(alignment: .leading) {
-            Capsule()
-                .fill(AppColors.purple.opacity(0.15))
+            // Background
+            RoundedRectangle(cornerRadius: NeoBrutal.radiusSmall)
+                .fill(AppColors.bgCream)
             
-            Capsule()
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            AppColors.purple.opacity(0.4),
-                            AppColors.purple
-                        ]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
+            // Progress fill
+            RoundedRectangle(cornerRadius: NeoBrutal.radiusSmall)
+                .fill(AppColors.neoPurple)
                 .scaleEffect(x: clamped, y: 1, anchor: .leading)
         }
-        .frame(height: 6)
+        .frame(height: 12)
+        .overlay(
+            RoundedRectangle(cornerRadius: NeoBrutal.radiusSmall)
+                .stroke(AppColors.neoBlack, lineWidth: NeoBrutal.borderThin)
+        )
     }
     
     private func stageTitle(for stage: Stage) -> String {
@@ -461,17 +479,16 @@ public struct GoalWizardView: View {
         do {
             let plan = try await GoalsAPI.shared.fetchGoalPlan(goalId: goalId)
             goalPlan = plan
+            isFetchingPlan = false
             
-            // Success! Wait a moment then dismiss
-            try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5s
-            onDismiss()
+            // Show the "start today or later" prompt
+            showStartPrompt = true
             
         } catch {
             errorText = "暂时无法获取目标计划，请稍后再试。"
             print("❌ Fetch goal plan error:", error)
+            isFetchingPlan = false
         }
-        
-        isFetchingPlan = false
     }
     
     private func toggleInputMode() {
@@ -481,5 +498,118 @@ public struct GoalWizardView: View {
         case .voice:
             inputMode = .text
         }
+    }
+    
+    // MARK: - Start Prompt Overlay
+    
+    @ViewBuilder
+    private var startPromptOverlay: some View {
+        if showStartPrompt {
+            ZStack {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                
+                VStack(spacing: 20) {
+                    // Success icon
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 48))
+                        .foregroundStyle(AppColors.neoGreen)
+                    
+                    Text("目标创建成功！")
+                        .font(AppFonts.neoHeadline)
+                        .foregroundStyle(AppColors.neoBlack)
+                    
+                    if let plan = goalPlan {
+                        Text(plan.title)
+                            .font(AppFonts.body)
+                            .foregroundStyle(AppColors.neutralGray)
+                            .multilineTextAlignment(.center)
+                    }
+                    
+                    Text("你想从今天开始执行任务吗？")
+                        .font(AppFonts.body)
+                        .foregroundStyle(AppColors.neoBlack)
+                        .padding(.top, 8)
+                    
+                    // Buttons
+                    VStack(spacing: 12) {
+                        // Start today button
+                        Button(action: handleStartToday) {
+                            HStack {
+                                if isAssigningTasks {
+                                    ProgressView()
+                                        .tint(.white)
+                                } else {
+                                    Text("今天开始")
+                                }
+                            }
+                            .font(AppFonts.neoButton)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(AppColors.neoPurple)
+                            .cornerRadius(NeoBrutal.radiusMedium)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: NeoBrutal.radiusMedium)
+                                    .stroke(AppColors.neoBlack, lineWidth: NeoBrutal.borderThin)
+                            )
+                        }
+                        .disabled(isAssigningTasks)
+                        
+                        // Later button
+                        Button(action: handleStartLater) {
+                            Text("稍后再说")
+                                .font(AppFonts.neoButton)
+                                .foregroundStyle(AppColors.neoBlack)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(AppColors.neoWhite)
+                                .cornerRadius(NeoBrutal.radiusMedium)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: NeoBrutal.radiusMedium)
+                                        .stroke(AppColors.neoBlack, lineWidth: NeoBrutal.borderThin)
+                                )
+                        }
+                        .disabled(isAssigningTasks)
+                    }
+                }
+                .padding(24)
+                .background(AppColors.neoWhite)
+                .cornerRadius(NeoBrutal.radiusLarge)
+                .overlay(
+                    RoundedRectangle(cornerRadius: NeoBrutal.radiusLarge)
+                        .stroke(AppColors.neoBlack, lineWidth: NeoBrutal.borderNormal)
+                )
+                .shadow(color: AppColors.shadowColor, radius: 0, x: 6, y: 6)
+                .padding(.horizontal, 32)
+            }
+        }
+    }
+    
+    private func handleStartToday() {
+        isAssigningTasks = true
+        
+        Task {
+            do {
+                // Call the today-plan API to generate task executions
+                _ = try await GoalsAPI.shared.fetchTodayPlan(userId: userId)
+                print("✅ Tasks assigned for today")
+                
+                isAssigningTasks = false
+                showStartPrompt = false
+                onDismiss()
+            } catch {
+                print("❌ Failed to assign tasks:", error)
+                errorText = "任务分配失败，请稍后在目标页面重试。"
+                isAssigningTasks = false
+                showStartPrompt = false
+                onDismiss()
+            }
+        }
+    }
+    
+    private func handleStartLater() {
+        showStartPrompt = false
+        onDismiss()
     }
 }

@@ -1,46 +1,102 @@
 import SwiftUI
 
+// MARK: - Finch-Inspired Design System Colors
+// A warm, gender-neutral palette with Duolingo-style 3D buttons
+// Primary: Sage Green | Secondary: Light Sage | Accent: Warm Gold, Coral, Purple
 public enum AppColors {
-    public static let gradientBackground = RadialGradient(
-        gradient: Gradient(colors: [
-            Color(hex: "9FE3E0"),
-            Color(hex: "F0CBF4")
-        ]),
-        center: .center,
-        startRadius: 0,
-        endRadius: 400
+    
+    // MARK: - Primary Colors (Finch-Inspired)
+    public static let primary = Color(hex: "C7A4DF")        // Sage green - main accent
+    public static let secondary = Color(hex: "7EB5A6")      // Light sage - secondary
+    public static let tertiary = Color(hex: "F1A522")       // Warm gold - highlights    
+    
+    // MARK: - Accent Colors
+    public static let accentBlue = Color(hex: "6BA3BE")     // Calm teal-blue
+    public static let accentCoral = Color(hex: "E07A5F")    // Warm coral (alerts, energy)
+    public static let accentPurple = Color(hex: "9B8EC4")   // Soft purple (fortune/mystical)
+    public static let accentGreen = Color(hex: "14ce75")    // Same as primary
+    public static let accentYellow = Color(hex: "FFF9C4")   // Same as tertiary
+    public static let accentRed = Color(hex: "E07A5F")      // Same as coral
+    
+    // MARK: - Button Depth Colors (for 3D effect)
+    public static let primaryDepth = Color(hex: "A080B8")   // Darker purple for button bottom (matches primary)
+    public static let secondaryDepth = Color(hex: "6A9A8E") // Darker light sage
+    public static let blueDepth = Color(hex: "5A8FA6")      // Darker blue for button bottom
+    public static let coralDepth = Color(hex: "C4624D")     // Darker coral for button bottom
+    public static let purpleDepth = Color(hex: "7A6FA0")    // Darker purple for button bottom
+    
+    // MARK: - Text Colors
+    public static let textDark = Color(hex: "2D3436")       // Dark gray (not pure black)
+    public static let textMedium = Color(hex: "636E72")     // Medium gray
+    public static let textLight = Color(hex: "B2BEC3")      // Light gray
+    public static let textBlack = textDark                  // Alias
+    
+    // MARK: - Background Colors
+    // public static let bgCream = Color(hex: "FAF7F2")        // Warm cream background
+    public static let bgCream = Color(hex: "F9E3E0")        // Warm cream background
+    // public static let bgSageLight = Color(hex: "F0F5F3")    // Very light sage tint
+    public static let bgSageLight = Color(hex: "F0CBF4")    // Very light sage tint
+    public static let bgWarmLight = Color(hex: "FDF9F3")    // Warm off-white
+    public static let cardWhite = Color.white               // Pure white for cards
+    
+    // MARK: - Legacy Background Aliases
+    public static let bgPinkLight = bgSageLight             // Renamed for compatibility
+    public static let bgLavenderLight = Color(hex: "F4F2F8") // Light purple tint
+    public static let bgMintLight = bgSageLight
+    
+    // MARK: - Semantic Colors
+    public static let purple = accentPurple
+    public static let neutralGray = textMedium
+    public static let white = bgCream
+    public static let gold = tertiary
+    public static let lightRed = Color(hex: "FCF0F0")
+    
+    // MARK: - Legacy Color Aliases (for backward compatibility)
+    public static let cutePink = primary                    // Now sage green
+    public static let cuteLavender = Color(hex: "C8B8D8")   // Soft lavender    
+    public static let cutePeach = Color(hex: "F8E8D8")      // Warm cream        
+    public static let cuteCoral = accentCoral
+    public static let lavender = cuteLavender    
+    public static let jade = Color(hex: "7EB5A6")  
+    
+    // MARK: - Gradient Backgrounds
+    public static let gradientBackground = LinearGradient(
+        colors: [bgCream, bgSageLight],
+        startPoint: .top,
+        endPoint: .bottom
+    )
+    
+    public static let gradientBackgroundColor = bgCream
+    
+    public static let fortunePurpleGradient = LinearGradient(
+        colors: [accentPurple, Color(hex: "B8A8D8")],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
     )
 
-    public static let fortunePurpleGradient = RadialGradient(
-        gradient: Gradient(colors: [            
-            AppColors.purple.opacity(0.8),
-            AppColors.purple
-        ]),
-        center: .center,
-        startRadius: 0,
-        endRadius: 280
-    )
-
-    public static let purple = Color(hex: "5E17EB")
-    public static let lavender: Color = Color(hex: "C7A4DF")
-    public static let textBlack = Color(hex: "5C5C5C")
-    public static let accentYellow = Color(hex: "F4CD0B")
-    public static let accentGreen = Color(hex: "14CE75")
-    public static let accentBlue = Color(hex: "4A90E2")
-    public static let accentRed = Color(hex: "FF5A5F")
-    public static let accentBrown = Color(hex: "8B572A")
-    public static let neutralGray = Color(hex: "A6A6A6")
-    public static let jade = Color(hex: "ACCFC3")
-    public static let white = Color(hex: "FFFFFF")
-    public static let gold = Color(hex: "F1A522")
-    public static let lightRed = Color(hex: "F9E3E0")
-
-    // Element colors
-    public static let elementGold = accentYellow
-    public static let elementWood = accentGreen
+    // MARK: - Element colors (Five Elements)
+    public static let elementGold = tertiary
+    public static let elementWood = primary
     public static let elementWater = accentBlue
-    public static let elementFire = accentRed
-    public static let elementEarth = accentBrown
+    public static let elementFire = accentCoral
+    public static let elementEarth = Color(hex: "B8A898")
+    
+    // MARK: - Shadow Color
+    public static let shadowColor = Color(hex: "2D3436").opacity(0.12)
+    
+    // MARK: - Neobrutalism Compatibility
+    public static let neoBlack = textDark
+    public static let neoWhite = bgCream
+    public static let neoPurple = accentPurple
+    public static let neoYellow = tertiary
+    public static let neoPink = primary
+    public static let neoBlue = accentBlue
+    public static let neoGreen = primary
+    public static let neoRed = accentCoral
+    public static let neoOrange = tertiary
+    public static let bgLavender = cuteLavender
+    public static let bgMint = secondary
+    public static let bgPeach = cutePeach
 }
 
 public extension Color {

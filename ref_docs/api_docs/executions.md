@@ -108,3 +108,84 @@ curl -X PATCH "http://localhost:8000/api/v1/executions/123" \
   - Underlying `Task` for the execution does not exist.
 - `500 Internal Server Error`
   - Unexpected server-side error while updating execution.
+
+---
+
+## 2. GET `/api/v1/executions/calendar/completion`
+Get task completion summary for a date range, designed for calendar widgets.
+
+### Description
+- Returns daily task completion statistics for a user over a specified date range.
+- Useful for calendar widgets that show different colors based on completion status.
+- Only days with at least one planned task are included in the response.
+
+### Query Parameters
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `user_id` | integer | Yes | User ID. |
+| `start_date` | string (`YYYY-MM-DD`) | No | Start of date range. Defaults to 30 days ago. |
+| `end_date` | string (`YYYY-MM-DD`) | No | End of date range. Defaults to today. |
+
+### Response — [`CalendarCompletionResponse`](../app/schemas/goal.py)
+| Field | Type | Description |
+| --- | --- | --- |
+| `user_id` | integer | The user ID for this summary. |
+| `start_date` | string | Start date of the range (`YYYY-MM-DD`). |
+| `end_date` | string | End date of the range (`YYYY-MM-DD`). |
+| `days` | array of `DailyCompletionItem` | List of daily completion summaries. |
+
+#### `DailyCompletionItem`
+| Field | Type | Description |
+| --- | --- | --- |
+| `date` | string | Date in `YYYY-MM-DD` format. |
+| `total_tasks` | integer | Total number of tasks planned for this day. |
+| `completed_tasks` | integer | Number of tasks completed on this day. |
+| `completion_rate` | float (0.0 - 1.0) | Completion rate. `1.0` means all tasks completed. |
+
+### Example Request
+```bash
+curl "http://localhost:8000/api/v1/executions/calendar/completion?user_id=1&start_date=2025-11-01&end_date=2025-11-30"
+```
+
+### Example Response
+```json
+{
+  "user_id": 1,
+  "start_date": "2025-11-01",
+  "end_date": "2025-11-30",
+  "days": [
+    {
+      "date": "2025-11-15",
+      "total_tasks": 3,
+      "completed_tasks": 3,
+      "completion_rate": 1.0
+    },
+    {
+      "date": "2025-11-16",
+      "total_tasks": 2,
+      "completed_tasks": 1,
+      "completion_rate": 0.5
+    },
+    {
+      "date": "2025-11-17",
+      "total_tasks": 4,
+      "completed_tasks": 0,
+      "completion_rate": 0.0
+    }
+  ]
+}
+```
+
+### Calendar Widget Color Mapping (Suggested)
+| `completion_rate` | Suggested Color | Meaning |
+| --- | --- | --- |
+| `1.0` | Green | All tasks completed ✅ |
+| `0.5 - 0.99` | Yellow/Orange | Partially completed |
+| `0.01 - 0.49` | Light Red | Low completion |
+| `0.0` | Red/Gray | No tasks completed |
+| (no entry) | No color | No tasks planned for that day |
+
+### Errors
+- `400 Bad Request`
+  - Invalid `start_date` or `end_date` format.
+  - `start_date` is after `end_date`.
