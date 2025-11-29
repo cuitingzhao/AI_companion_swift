@@ -42,6 +42,37 @@ public final class ExecutionsAPI {
         return try decoder.decode(ExecutionUpdateResponse.self, from: data)
     }
 
+    /// Fetch daily task plan with auto-expiration of overdue milestones
+    public func fetchDailyPlan(userId: Int, targetDate: String? = nil) async throws -> DailyTaskPlanResponse {
+        var components = URLComponents()
+        components.scheme = baseURL.scheme
+        components.host = baseURL.host
+        components.port = baseURL.port
+        components.path = "/api/v1/executions/daily"
+        
+        var queryItems = [URLQueryItem(name: "user_id", value: String(userId))]
+        if let targetDate = targetDate {
+            queryItems.append(URLQueryItem(name: "target_date", value: targetDate))
+        }
+        components.queryItems = queryItems
+
+        guard let url = components.url else {
+            throw ExecutionsAPIError.invalidURL
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "GET"
+
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw ExecutionsAPIError.badResponse
+        }
+
+        let decoder = JSONDecoder()
+        return try decoder.decode(DailyTaskPlanResponse.self, from: data)
+    }
+    
     public func getCalendarCompletion(userId: Int, startDate: String, endDate: String) async throws -> CalendarCompletionResponse {
         var components = URLComponents()
         components.scheme = baseURL.scheme

@@ -111,7 +111,96 @@ curl -X PATCH "http://localhost:8000/api/v1/executions/123" \
 
 ---
 
-## 2. GET `/api/v1/executions/calendar/completion`
+## 2. GET `/api/v1/executions/daily`
+Get or generate the daily task plan for a user.
+
+### Description
+- Returns the daily task plan for a user on a given date.
+- If no plan exists for the date, generates one automatically.
+- **Auto-expires overdue milestones** before generating/returning the plan.
+- Returns info about any milestones that were auto-expired, allowing client to prompt user for feedback.
+
+### Query Parameters
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `user_id` | integer | Yes | User ID. |
+| `target_date` | string (`YYYY-MM-DD`) | No | Date for the plan. Defaults to today. |
+
+### Response — [`DailyTaskPlanResponse`](../app/schemas/goal.py)
+| Field | Type | Description |
+| --- | --- | --- |
+| `date` | string | The date of this plan (`YYYY-MM-DD`). |
+| `items` | array of `DailyTaskItemResponse` | List of task items for the day. |
+| `expired_milestones` | array of `ExpiredMilestoneInfo` | Milestones that were auto-expired during this request. |
+
+#### `DailyTaskItemResponse`
+| Field | Type | Description |
+| --- | --- | --- |
+| `execution_id` | integer | ID of the TaskExecution. |
+| `task_id` | integer | ID of the Task. |
+| `goal_id` | integer | ID of the Goal. |
+| `milestone_id` | integer \| null | ID of the Milestone (if any). |
+| `goal_title` | string \| null | Title of the Goal. |
+| `title` | string | Title of the Task. |
+| `estimated_minutes` | integer \| null | Estimated minutes for the task. |
+| `priority` | string | Task priority: `high` \| `medium` \| `low`. |
+| `frequency` | string | Task frequency: `once` \| `daily` \| `weekly` \| `weekdays` \| `monthly` \| `other`. |
+| `status` | string | Execution status: `planned` \| `completed` \| `cancelled` \| `postponed`. |
+| `planned_date` | string | Planned date (`YYYY-MM-DD`). |
+| `execution_date` | string \| null | Actual execution date if completed. |
+
+#### `ExpiredMilestoneInfo`
+| Field | Type | Description |
+| --- | --- | --- |
+| `milestone_id` | integer | ID of the expired milestone. |
+| `title` | string | Title of the milestone. |
+| `goal_id` | integer | ID of the parent goal. |
+| `goal_title` | string \| null | Title of the parent goal. |
+| `due_date` | string \| null | Original due date of the milestone. |
+
+### Example Response
+```json
+{
+  "date": "2025-11-29",
+  "items": [
+    {
+      "execution_id": 42,
+      "task_id": 10,
+      "goal_id": 1,
+      "milestone_id": 3,
+      "goal_title": "学习Python",
+      "title": "完成第5章练习",
+      "estimated_minutes": 30,
+      "priority": "high",
+      "frequency": "daily",
+      "status": "planned",
+      "planned_date": "2025-11-29",
+      "execution_date": null
+    }
+  ],
+  "expired_milestones": [
+    {
+      "milestone_id": 5,
+      "title": "完成基础语法学习",
+      "goal_id": 1,
+      "goal_title": "学习Python",
+      "due_date": "2025-11-28"
+    }
+  ]
+}
+```
+
+### Client Handling for `expired_milestones`
+When `expired_milestones` is non-empty, client should:
+1. Display a notification/dialog to the user.
+2. Ask user: "Did you complete this milestone?" 
+3. Based on user response:
+   - If yes → Call `PATCH /api/v1/goals/milestones/{milestone_id}` with `action: "complete"`
+   - If no → Milestone remains expired (user can extend due date or leave as-is)
+
+---
+
+## 3. GET `/api/v1/executions/calendar/completion`
 Get task completion summary for a date range, designed for calendar widgets.
 
 ### Description

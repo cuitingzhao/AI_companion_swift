@@ -600,8 +600,8 @@ public struct GoalWizardView: View {
         
         Task {
             do {
-                // Call the today-plan API to generate task executions
-                _ = try await GoalsAPI.shared.fetchTodayPlan(userId: userId)
+                // Call the daily plan API to generate task executions
+                _ = try await ExecutionsAPI.shared.fetchDailyPlan(userId: userId)
                 print("✅ Tasks assigned for today")
                 
                 isAssigningTasks = false

@@ -90,6 +90,13 @@ public struct HomeDailyTasksView: View {
                                     onAddGoal: {
                                         viewModel.goalWizardSource = "manual"
                                         viewModel.showGoalWizard = true
+                                    },
+                                    onGoalUpdated: {
+                                        // Mark data as needing refresh for when user switches tabs
+                                        viewModel.goalDataNeedsRefresh = true
+                                        Task {
+                                            await viewModel.reloadPlanOnly()
+                                        }
                                     }
                                 )
                             case .fortune, .personality, .settings:
@@ -232,6 +239,21 @@ public struct HomeDailyTasksView: View {
             if showCelebration {
                 celebrationOverlay
             }
+            
+            // Expired milestone wizard
+            if viewModel.showExpiredMilestoneDialog {
+                ExpiredMilestoneWizardView(
+                    isPresented: $viewModel.showExpiredMilestoneDialog,
+                    expiredMilestones: viewModel.expiredMilestones,
+                    onComplete: {
+                        // Reload data after handling expired milestones
+                        Task {
+                            await viewModel.reloadPlanOnly()
+                            await viewModel.loadGoalPlanIfNeeded(forceReload: true)
+                        }
+                    }
+                )
+            }
         }
         .fullScreenCover(isPresented: $isShowingChat) {
             ChatView(viewModel: chatViewModel)
@@ -262,7 +284,13 @@ public struct HomeDailyTasksView: View {
             switch newTab {
             case .goals:
                 Task {
-                    await viewModel.loadGoalPlanIfNeeded()
+                    // If data needs refresh (updates were made), reload goal plans
+                    if viewModel.goalDataNeedsRefresh {
+                        await viewModel.loadGoalPlanIfNeeded(forceReload: true)
+                        viewModel.goalDataNeedsRefresh = false
+                    } else {
+                        await viewModel.loadGoalPlanIfNeeded()
+                    }
                 }
             case .daily:
                 Task {

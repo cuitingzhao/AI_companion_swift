@@ -295,6 +295,7 @@ Update the status of a single milestone (e.g. mark as completed).
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
 | `action` | string | Yes | One of: `"complete"`, `"expire"`, `"reopen"`. |
+| `new_due_date` | string | No | New due date (`YYYY-MM-DD`) when reopening an expired milestone. Ignored for other actions. |
 
 ### Response — [`MilestoneUpdateResponse`](../app/schemas/goal.py)
 ```json
@@ -333,10 +334,166 @@ curl -X PATCH "http://localhost:8000/api/v1/goals/milestones/101" \
   }'
 ```
 
+#### Reopen a milestone with new due date
+```bash
+curl -X PATCH "http://localhost:8000/api/v1/goals/milestones/101" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "action": "reopen",
+    "new_due_date": "2025-12-15"
+  }'
+```
+
 ### Errors
 - `400 Bad Request`
   - Invalid `action` (not one of `complete|expire|reopen`).
+  - Invalid `new_due_date` format (must be `YYYY-MM-DD`).
 - `404 Not Found`
   - `Milestone` with given `milestone_id` does not exist.
 - `500 Internal Server Error`
   - Unexpected server-side error while updating milestone.
+
+---
+
+## 7. PATCH `/api/v1/goals/{goal_id}`
+Update a goal's fields (title, status, due_date).
+
+### Description
+- Uses `GoalService.update_goal` to update a `Goal` row.
+- Only provided fields are updated; omitted fields remain unchanged.
+- When status is set to `"completed"`, `completed_at` is automatically set.
+- **Cascading behavior**:
+  - When status is set to `"completed"`, all milestones → `completed`, all tasks → `completed`.
+  - When status is set to `"abandoned"`, all milestones → `expired`.
+- **Terminal states**: `completed` and `abandoned` are irreversible.
+
+### Path Parameters
+| Name | Type | Description |
+| --- | --- | --- |
+| `goal_id` | integer | ID of the goal to update. |
+### Request Body — [`GoalUpdateRequest`](../app/schemas/goal.py)
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `title` | string | No | New goal title (max 200 chars). |
+| `status` | string | No | New status: `"active"` \| `"completed"` \| `"abandoned"`. |
+| `due_date` | string | No | New due date in `YYYY-MM-DD` format. |
+
+### Response — [`GoalUpdateResponse`](../app/schemas/goal.py)
+```json
+{
+  "status": "success",
+  "message": "Goal updated: title, status",
+  "updated_fields": ["title", "status"]
+}
+```
+
+### Example Request
+```bash
+curl -X PATCH "http://localhost:8000/api/v1/goals/12" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "三个月减脂6公斤",
+    "due_date": "2025-04-15"
+  }'
+```
+
+### Errors
+- `400 Bad Request` – Invalid status value.
+- `404 Not Found` – Goal with given `goal_id` does not exist.
+- `500 Internal Server Error` – Unexpected server-side error.
+
+---
+
+## 8. PATCH `/api/v1/goals/milestones/{milestone_id}/fields`
+Update a milestone's fields (title, desc, due_date, priority, status).
+
+### Description
+- Uses `GoalService.update_milestone_fields` to update a `Milestone` row.
+- Only provided fields are updated; omitted fields remain unchanged.
+- When status is set to `"completed"`, `completed_at` is automatically set.
+- **Cascading behavior**: When status is set to `"completed"`, all tasks under this milestone are also marked as completed.
+
+### Path Parameters
+| Name | Type | Description |
+| --- | --- | --- |
+| `milestone_id` | integer | ID of the milestone to update. |
+
+### Request Body — [`MilestoneFullUpdateRequest`](../app/schemas/goal.py)
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `title` | string | No | New milestone title (max 200 chars). |
+| `desc` | string | No | New milestone description. |
+| `due_date` | string | No | New due date in `YYYY-MM-DD` format. |
+| `priority` | string | No | New priority: `"high"` \| `"medium"` \| `"low"`. |
+| `status` | string | No | New status: `"pending"` \| `"active"` \| `"completed"` \| `"expired"`. |
+
+### Response — [`MilestoneFullUpdateResponse`](../app/schemas/goal.py)
+```json
+{
+  "status": "success",
+  "message": "Milestone updated: title, priority",
+  "updated_fields": ["title", "priority"]
+}
+```
+
+### Example Request
+```bash
+curl -X PATCH "http://localhost:8000/api/v1/goals/milestones/101/fields" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "第一个月减脂 2 公斤",
+    "priority": "high"
+  }'
+```
+
+### Errors
+- `400 Bad Request` – Invalid status or priority value.
+- `404 Not Found` – Milestone with given `milestone_id` does not exist.
+- `500 Internal Server Error` – Unexpected server-side error.
+
+---
+
+## 9. PATCH `/api/v1/goals/tasks/{task_id}`
+Update a task's fields (title, status, priority, frequency).
+
+### Description
+- Uses `GoalService.update_task` to update a `Task` row.
+- Only provided fields are updated; omitted fields remain unchanged.
+- When status is set to `"completed"`, `completed_at` is automatically set.
+
+### Path Parameters
+| Name | Type | Description |
+| --- | --- | --- |
+| `task_id` | integer | ID of the task to update. |
+
+### Request Body — [`TaskUpdateRequest`](../app/schemas/goal.py)
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `title` | string | No | New task title (max 200 chars). |
+| `status` | string | No | New status: `"pending"` \| `"in_progress"` \| `"completed"` \| `"expired"`. |
+| `priority` | string | No | New priority: `"high"` \| `"medium"` \| `"low"`. |
+| `frequency` | string | No | New frequency: `"once"` \| `"daily"` \| `"weekly"` \| `"weekdays"` \| `"monthly"` \| `"other"`. |
+
+### Response — [`TaskUpdateResponse`](../app/schemas/goal.py)
+```json
+{
+  "status": "success",
+  "message": "Task updated: status, priority",
+  "updated_fields": ["status", "priority"]
+}
+```
+
+### Example Request
+```bash
+curl -X PATCH "http://localhost:8000/api/v1/goals/tasks/1001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "completed",
+    "priority": "high"
+  }'
+```
+
+### Errors
+- `400 Bad Request` – Invalid status, priority, or frequency value.
+- `404 Not Found` – Task with given `task_id` does not exist.
+- `500 Internal Server Error` – Unexpected server-side error.

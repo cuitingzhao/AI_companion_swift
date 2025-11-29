@@ -28,6 +28,7 @@ AICompanion/
 |   |       |-- FloatingChatButton.swift (floating action button for chat)
 |   |       |-- Toast.swift (Neobrutalist toast notification)
 |   |       |-- GIFImage.swift (animated GIF display component)
+|   |       |-- DialogComponents.swift (reusable dialog components: DialogContainer, DialogHeader, LabeledTextField, OptionPicker, DateTogglePicker, DialogButtonRow, ConfirmationDialogOverlay)
 |   |
 |   |-- Networking/
 |   |   |-- CitiesAPI.swift
@@ -77,7 +78,13 @@ AICompanion/
 |   |   |   |-- TaskForTodayView.swift (widget for today's tasks)
 |   |   |-- GoalTracking/
 |   |   |   |-- GoalTrackingPageView.swift (page body for "目标追踪" tab)
-|   |   |-- GoalTrackingSectionView.swift (goal tracking tab UI)
+|   |   |   |-- GoalTrackingSectionView.swift (goal tracking section with milestone timeline)
+|   |   |   |-- GoalTrackingViewModel.swift (state management and API calls for goal tracking)
+|   |   |   |-- GoalEditDialogs.swift (edit dialogs for goal, milestone, task updates)
+|   |   |   |-- MilestoneTimelineView.swift (horizontal scrollable milestone timeline)
+|   |   |   |-- MilestoneCardView.swift (individual milestone card with tasks)
+|   |   |   |-- MilestoneStateHelpers.swift (milestone state enum and styling helpers)
+|   |   |   |-- ExpiredMilestoneWizardView.swift (wizard for handling expired milestones)
 |   |   |-- DailyTasksSectionView.swift (daily tasks list and empty state)
 |   |   |-- DailyFortuneCardView.swift (overlay card for fortune details)
 |   |   |-- TaskExecutionCardView.swift (modal card for executing a single task)

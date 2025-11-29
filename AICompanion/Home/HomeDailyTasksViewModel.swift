@@ -22,11 +22,18 @@ final class HomeDailyTasksViewModel: ObservableObject {
     @Published var isGoalPlanLoading: Bool = false
     @Published var goalPlanError: String?
     
+    /// Flag to track if goal data needs refresh (set when updates are made)
+    @Published var goalDataNeedsRefresh: Bool = false
+    
     @Published var showGoalWizard: Bool = false
     @Published var goalWizardSource: String? = "manual"
     
     @Published var weeklyCompletion: [DailyCompletionItem] = []
     @Published var isWeeklyCompletionLoading: Bool = false
+    
+    /// Expired milestones that need user attention
+    @Published var expiredMilestones: [ExpiredMilestoneInfo] = []
+    @Published var showExpiredMilestoneDialog: Bool = false
     
     /// Returns yesterday's task completion summary message
     var yesterdaySummaryMessage: String? {
@@ -115,19 +122,30 @@ final class HomeDailyTasksViewModel: ObservableObject {
                 return
             }
 
-            let plan = try await GoalsAPI.shared.fetchTodayPlan(userId: userId)
+            // Use new ExecutionsAPI.fetchDailyPlan which auto-expires overdue milestones
+            let plan = try await ExecutionsAPI.shared.fetchDailyPlan(userId: userId)
             dailyPlan = plan
+            
+            // Handle expired milestones if any
+            print("📋 Daily plan received. Expired milestones: \(plan.expiredMilestones?.count ?? 0)")
+            if let expired = plan.expiredMilestones, !expired.isEmpty {
+                print("⚠️ Found \(expired.count) expired milestones, showing dialog")
+                expiredMilestones = expired
+                showExpiredMilestoneDialog = true
+            }
         } catch {
-            print("❌ fetchTodayPlan error:", error)
+            print("❌ fetchDailyPlan error:", error)
             loadError = "暂时无法获取今日待办事项，请稍后再试。"
         }
 
         isLoading = false
     }
 
-    func loadGoalPlanIfNeeded() async {
+    func loadGoalPlanIfNeeded(forceReload: Bool = false) async {
         guard !isGoalPlanLoading else { return }
-        guard goalPlans.isEmpty else { return }
+        
+        // Skip if already loaded and not forcing reload
+        if !forceReload && !goalPlans.isEmpty { return }
 
         guard let userId else {
             goalPlanError = "系统暂时无法获取你的账户信息，目标计划暂时无法加载，请稍后再试。"
@@ -232,8 +250,14 @@ final class HomeDailyTasksViewModel: ObservableObject {
     func reloadPlanOnly() async {
         do {
             guard let userId else { return }
-            let plan = try await GoalsAPI.shared.fetchTodayPlan(userId: userId)
+            let plan = try await ExecutionsAPI.shared.fetchDailyPlan(userId: userId)
             dailyPlan = plan
+            
+            // Handle expired milestones if any
+            if let expired = plan.expiredMilestones, !expired.isEmpty {
+                expiredMilestones = expired
+                showExpiredMilestoneDialog = true
+            }
         } catch {
             print("❌ reloadPlanOnly error:", error)
             // actionError is owned by the view; surface a generic message here if needed.
@@ -281,7 +305,7 @@ final class HomeDailyTasksViewModel: ObservableObject {
         isWeeklyCompletionLoading = false
     }
     
-    /// Assign tasks for today by calling the today-plan API
+    /// Assign tasks for today by calling the daily plan API
     /// This generates TaskExecution records for the user's active goals
     func assignTodayTasks() async {
         guard let userId else {
@@ -290,10 +314,16 @@ final class HomeDailyTasksViewModel: ObservableObject {
         }
         
         do {
-            // Calling fetchTodayPlan will generate task executions if they don't exist
-            let plan = try await GoalsAPI.shared.fetchTodayPlan(userId: userId)
+            // Calling fetchDailyPlan will generate task executions if they don't exist
+            let plan = try await ExecutionsAPI.shared.fetchDailyPlan(userId: userId)
             dailyPlan = plan
             print("✅ Tasks assigned for today, count:", plan.items.count)
+            
+            // Handle expired milestones if any
+            if let expired = plan.expiredMilestones, !expired.isEmpty {
+                expiredMilestones = expired
+                showExpiredMilestoneDialog = true
+            }
         } catch {
             print("❌ assignTodayTasks error:", error)
             loadError = "任务分配失败，请稍后再试。"

@@ -171,9 +171,34 @@ public struct DailyTaskItemResponse: Codable {
     }
 }
 
+// MARK: - Expired Milestone Info
+
+public struct ExpiredMilestoneInfo: Codable {
+    public let milestoneId: Int
+    public let title: String
+    public let goalId: Int
+    public let goalTitle: String?
+    public let dueDate: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case milestoneId = "milestone_id"
+        case title
+        case goalId = "goal_id"
+        case goalTitle = "goal_title"
+        case dueDate = "due_date"
+    }
+}
+
 public struct DailyTaskPlanResponse: Codable {
     public let date: String
     public let items: [DailyTaskItemResponse]
+    public let expiredMilestones: [ExpiredMilestoneInfo]?
+    
+    enum CodingKeys: String, CodingKey {
+        case date
+        case items
+        case expiredMilestones = "expired_milestones"
+    }
 }
 
 public struct ExecutionUpdateRequest: Codable {
@@ -229,5 +254,132 @@ public struct CalendarCompletionResponse: Codable {
         case startDate = "start_date"
         case endDate = "end_date"
         case days
+    }
+}
+
+// MARK: - Goal Update
+
+public struct GoalUpdateRequest: Codable {
+    public let title: String?
+    public let status: String?
+    public let dueDate: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case title
+        case status
+        case dueDate = "due_date"
+    }
+    
+    public init(title: String? = nil, status: String? = nil, dueDate: String? = nil) {
+        self.title = title
+        self.status = status
+        self.dueDate = dueDate
+    }
+}
+
+public struct GoalUpdateResponse: Codable {
+    public let status: String
+    public let message: String
+    public let updatedFields: [String]
+    
+    enum CodingKeys: String, CodingKey {
+        case status
+        case message
+        case updatedFields = "updated_fields"
+    }
+}
+
+// MARK: - Milestone Update
+
+public struct MilestoneUpdateRequest: Codable {
+    public let title: String?
+    public let desc: String?
+    public let dueDate: String?
+    public let priority: String?
+    public let status: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case title
+        case desc
+        case dueDate = "due_date"
+        case priority
+        case status
+    }
+    
+    public init(title: String? = nil, desc: String? = nil, dueDate: String? = nil, priority: String? = nil, status: String? = nil) {
+        self.title = title
+        self.desc = desc
+        self.dueDate = dueDate
+        self.priority = priority
+        self.status = status
+    }
+}
+
+public struct MilestoneUpdateResponse: Codable {
+    public let status: String
+    public let message: String
+    public let updatedFields: [String]
+    
+    enum CodingKeys: String, CodingKey {
+        case status
+        case message
+        case updatedFields = "updated_fields"
+    }
+}
+
+// MARK: - Milestone Action (complete/expire/reopen)
+
+public struct MilestoneActionRequest: Codable {
+    public let action: String
+    public let newDueDate: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case action
+        case newDueDate = "new_due_date"
+    }
+    
+    public init(action: String, newDueDate: String? = nil) {
+        self.action = action
+        self.newDueDate = newDueDate
+    }
+}
+
+public struct MilestoneActionResponse: Codable {
+    public let status: String
+    public let message: String
+}
+
+// MARK: - Task Update
+
+public struct TaskUpdateRequest: Codable {
+    public let title: String?
+    public let status: String?
+    public let priority: String?
+    public let frequency: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case title
+        case status
+        case priority
+        case frequency
+    }
+    
+    public init(title: String? = nil, status: String? = nil, priority: String? = nil, frequency: String? = nil) {
+        self.title = title
+        self.status = status
+        self.priority = priority
+        self.frequency = frequency
+    }
+}
+
+public struct TaskUpdateResponse: Codable {
+    public let status: String
+    public let message: String
+    public let updatedFields: [String]
+    
+    enum CodingKeys: String, CodingKey {
+        case status
+        case message
+        case updatedFields = "updated_fields"
     }
 }

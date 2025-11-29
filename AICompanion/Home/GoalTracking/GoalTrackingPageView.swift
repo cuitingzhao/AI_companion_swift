@@ -7,6 +7,7 @@ struct GoalTrackingPageView: View {
     let isLoading: Bool
     let errorText: String?
     let onAddGoal: () -> Void
+    var onGoalUpdated: (() -> Void)?
     
     @State private var selectedGoalId: Int?
 
@@ -25,7 +26,8 @@ struct GoalTrackingPageView: View {
                     plan: selectedPlan,
                     currentMilestoneIds: currentMilestoneIdsForSelectedGoal,
                     isLoading: isLoading,
-                    errorText: errorText
+                    errorText: errorText,
+                    onGoalUpdated: onGoalUpdated
                 )
                 
                 // Bottom spacing for floating button

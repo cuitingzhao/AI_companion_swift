@@ -162,12 +162,12 @@ public struct TaskForTodayView: View {
 
         Task {
             do {
-                let response = try await GoalsAPI.shared.fetchTodayPlan(userId: userId)
+                let response = try await ExecutionsAPI.shared.fetchDailyPlan(userId: userId)
                 plan = response
                 errorText = nil
             } catch {
                 errorText = "暂时无法获取今日的待办事项，请稍后再试。"
-                print("❌ fetchTodayPlan error:", error)
+                print("❌ fetchDailyPlan error:", error)
             }
 
             isLoading = false
