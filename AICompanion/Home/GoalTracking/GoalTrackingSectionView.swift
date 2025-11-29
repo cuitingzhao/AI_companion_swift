@@ -100,7 +100,7 @@ struct GoalTrackingSectionView: View {
     private func goalTrackingHeader(plan: GoalPlanResponse) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center) {
-                Text("目标")
+                Text("🎯目标")
                     .font(AppFonts.large)
                     .foregroundStyle(AppColors.textBlack)
 

@@ -161,9 +161,8 @@ struct DateTogglePicker: View {
                     .foregroundStyle(AppColors.textMedium)
                 Spacer()
                 Toggle("", isOn: $hasDate)
-                    .toggleStyle(.switch)
+                    .toggleStyle(RoundKnobToggleStyle())
                     .labelsHidden()
-                    .fixedSize()
             }
             
             if hasDate {

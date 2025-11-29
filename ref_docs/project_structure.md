@@ -28,6 +28,7 @@ AICompanion/
 |   |       |-- FloatingChatButton.swift (floating action button for chat)
 |   |       |-- Toast.swift (Neobrutalist toast notification)
 |   |       |-- GIFImage.swift (animated GIF display component)
+|   |       |-- AppToggle.swift (reusable toggle component with round knob: AppToggle, RoundKnobToggleStyle)
 |   |       |-- DialogComponents.swift (reusable dialog components: DialogContainer, DialogHeader, LabeledTextField, OptionPicker, DateTogglePicker, DialogButtonRow, ConfirmationDialogOverlay)
 |   |
 |   |-- Networking/
@@ -71,6 +72,11 @@ AICompanion/
 |   |-- Home/
 |   |   |-- HomeDailyTasksView.swift (homepage shell with tabs for daily tasks, goals, etc.)
 |   |   |-- HomeDailyTasksViewModel.swift
+|   |   |-- Components/
+|   |   |   |-- HomeHeaderView.swift (header with greeting, date, fortune guide)
+|   |   |   |-- HomeBottomTabBar.swift (bottom tab bar with HomeTab enum)
+|   |   |   |-- TaskExecutionOverlay.swift (task detail card, loading, confirmations)
+|   |   |   |-- CelebrationOverlay.swift (celebration animation on task completion)
 |   |   |-- GoalWizard/
 |   |   |   |-- GoalWizardView.swift (standalone goal creation wizard triggered from chat)
 |   |   |-- DailyTasks/

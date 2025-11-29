@@ -3,7 +3,7 @@ import SwiftUI
 struct TaskExecutionCardView: View {
     let task: DailyTaskItemResponse
     let width: CGFloat
-    let onAction: (HomeDailyTasksView.ExecutionAction) -> Void
+    let onAction: (ExecutionAction) -> Void
     // Callbacks for full-screen confirmation dialogs
     var onRequestComplete: (() -> Void)?
     var onRequestDelete: (() -> Void)?
