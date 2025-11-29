@@ -96,16 +96,28 @@ final class HomeDailyTasksViewModel: ObservableObject {
         loadCachedFortuneIfAvailable()
 
         Task {
+            // Track start time for minimum splash duration
+            let startTime = Date()
+            
             await fetchCalendarAndPlan()
             // Also load goal plans so visibleTasks can filter properly
             await loadGoalPlanIfNeeded()
             // Fetch weekly completion for calendar widget
             await loadWeeklyCompletion()
+            
+            // Ensure splash shows for at least 2 seconds
+            let elapsed = Date().timeIntervalSince(startTime)
+            let minimumDuration: TimeInterval = 2.0
+            if elapsed < minimumDuration {
+                try? await Task.sleep(nanoseconds: UInt64((minimumDuration - elapsed) * 1_000_000_000))
+            }
+            
+            // Now set isLoading to false to dismiss splash
+            isLoading = false
         }
     }
 
     private func fetchCalendarAndPlan() async {
-        isLoading = true
         loadError = nil
 
         do {
@@ -137,8 +149,6 @@ final class HomeDailyTasksViewModel: ObservableObject {
             print("❌ fetchDailyPlan error:", error)
             loadError = "暂时无法获取今日待办事项，请稍后再试。"
         }
-
-        isLoading = false
     }
 
     func loadGoalPlanIfNeeded(forceReload: Bool = false) async {

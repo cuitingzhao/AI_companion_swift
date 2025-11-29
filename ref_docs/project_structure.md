@@ -77,6 +77,7 @@ AICompanion/
 |   |   |   |-- HomeBottomTabBar.swift (bottom tab bar with HomeTab enum)
 |   |   |   |-- TaskExecutionOverlay.swift (task detail card, loading, confirmations)
 |   |   |   |-- CelebrationOverlay.swift (celebration animation on task completion)
+|   |   |   |-- SplashView.swift (splash screen during initial app loading)
 |   |   |-- GoalWizard/
 |   |   |   |-- GoalWizardView.swift (standalone goal creation wizard triggered from chat)
 |   |   |-- DailyTasks/

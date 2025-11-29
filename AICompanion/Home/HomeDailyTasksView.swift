@@ -28,14 +28,66 @@ public struct HomeDailyTasksView: View {
 
     public var body: some View {
         ZStack {
+            // Show splash screen during initial loading
+            if viewModel.isLoading {
+                SplashView()
+            } else {
+                mainContent
+            }
+        }
+        .fullScreenCover(isPresented: $isShowingChat) {
+            ChatView(viewModel: chatViewModel)
+        }
+        .fullScreenCover(isPresented: $viewModel.showGoalWizard) {
+            if let userId = userId {
+                GoalWizardView(
+                    userId: userId,
+                    candidateDescription: nil,
+                    source: viewModel.goalWizardSource,
+                    onDismiss: {
+                        viewModel.showGoalWizard = false
+                        // Reload goal plans after wizard closes
+                        Task {
+                            viewModel.goalPlans = []
+                            await viewModel.loadGoalPlanIfNeeded()
+                        }
+                    }
+                )
+            }
+        }
+        .onAppear {
+            viewModel.loadInitialDataIfNeeded()
+            // Pre-warm chat data in background for faster chat opening
+            chatViewModel.prewarm()
+        }
+        .onChange(of: selectedTab) { _, newTab in
+            switch newTab {
+            case .goals:
+                Task {
+                    // If data needs refresh (updates were made), reload goal plans
+                    if viewModel.goalDataNeedsRefresh {
+                        await viewModel.loadGoalPlanIfNeeded(forceReload: true)
+                        viewModel.goalDataNeedsRefresh = false
+                    } else {
+                        await viewModel.loadGoalPlanIfNeeded()
+                    }
+                }
+            case .daily:
+                Task {
+                    await viewModel.reloadPlanOnly()
+                }
+            default:
+                break
+            }
+        }
+    }
+    
+    // MARK: - Main Content
+    
+    private var mainContent: some View {
+        ZStack {
             AppColors.accentYellow
                 .ignoresSafeArea()
-
-            // Image("star_bg")
-            //     .resizable()
-            //     .scaledToFill()
-            //     .ignoresSafeArea()
-            //     .opacity(0.5)
 
             VStack(spacing: 0) {
                 // Header view based on selected tab
@@ -182,51 +234,6 @@ public struct HomeDailyTasksView: View {
                         }
                     }
                 )
-            }
-        }
-        .fullScreenCover(isPresented: $isShowingChat) {
-            ChatView(viewModel: chatViewModel)
-        }
-        .fullScreenCover(isPresented: $viewModel.showGoalWizard) {
-            if let userId = userId {
-                GoalWizardView(
-                    userId: userId,
-                    candidateDescription: nil,
-                    source: viewModel.goalWizardSource,
-                    onDismiss: {
-                        viewModel.showGoalWizard = false
-                        // Reload goal plans after wizard closes
-                        Task {
-                            viewModel.goalPlans = []
-                            await viewModel.loadGoalPlanIfNeeded()
-                        }
-                    }
-                )
-            }
-        }
-        .onAppear {
-            viewModel.loadInitialDataIfNeeded()
-            // Pre-warm chat data in background for faster chat opening
-            chatViewModel.prewarm()
-        }
-        .onChange(of: selectedTab) { _, newTab in
-            switch newTab {
-            case .goals:
-                Task {
-                    // If data needs refresh (updates were made), reload goal plans
-                    if viewModel.goalDataNeedsRefresh {
-                        await viewModel.loadGoalPlanIfNeeded(forceReload: true)
-                        viewModel.goalDataNeedsRefresh = false
-                    } else {
-                        await viewModel.loadGoalPlanIfNeeded()
-                    }
-                }
-            case .daily:
-                Task {
-                    await viewModel.reloadPlanOnly()
-                }
-            default:
-                break
             }
         }
     }
