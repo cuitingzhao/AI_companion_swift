@@ -58,17 +58,22 @@ public struct GoalWizardView: View {
     }
     
     public var body: some View {
-        ZStack(alignment: .top) {
-            // Neobrutalism: Solid background
-            AppColors.bgMint
-                .ignoresSafeArea()
+        GeometryReader { geometry in
+            let safeAreaBottom = geometry.safeAreaInsets.bottom
             
-            VStack(spacing: 0) {
-                header
-                contentView
+            ZStack(alignment: .top) {
+                // Neobrutalism: Solid background
+                AppColors.bgMint
+                    .ignoresSafeArea()
+                
+                VStack(spacing: 0) {
+                    header
+                    contentView
+                }
+                .padding(.bottom, keyboardHeight > 0 ? max(keyboardHeight - safeAreaBottom, 0) : 0)
             }
         }
-        .padding(.bottom, keyboardHeight)
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .animation(.easeOut(duration: 0.25), value: keyboardHeight)
         .onAppear(perform: setupInitialMessage)
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("UIKeyboardWillShowNotification"))) { notification in
@@ -93,7 +98,7 @@ public struct GoalWizardView: View {
         HStack {
             Text("创建新目标")
                 .font(AppFonts.neoHeadline)
-                .foregroundStyle(AppColors.neoBlack)
+                .foregroundStyle(.white)
             
             Spacer()
             
@@ -330,14 +335,18 @@ public struct GoalWizardView: View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
                 if inputMode == .text {
-                    AppTextField(
-                        "请输入内容",
-                        text: $draftMessage,
-                        submitLabel: SubmitLabel.send,
-                        onSubmit: {
+                    // Custom text field with light gray background
+                    TextField("请输入内容", text: $draftMessage)
+                        .font(AppFonts.body)
+                        .foregroundStyle(AppColors.textDark)
+                        .submitLabel(.send)
+                        .onSubmit {
                             sendCurrentMessage()
                         }
-                    )
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(AppColors.neutralGray.opacity(0.3))
+                        .cornerRadius(12)
                 } else {
                     VoiceInputButton(
                         text: $draftMessage,

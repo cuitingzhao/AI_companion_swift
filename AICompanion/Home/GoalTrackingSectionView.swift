@@ -99,9 +99,15 @@ struct GoalTrackingSectionView: View {
                     .font(AppFonts.large)
                     .foregroundStyle(AppColors.textBlack)
 
-                Spacer()
+                Spacer()                
+            }
 
-                if let due = plan.dueDate, !due.isEmpty {
+            Text(plan.title)
+                .font(AppFonts.body)
+                .foregroundStyle(AppColors.textBlack)
+                .fixedSize(horizontal: false, vertical: true)
+            
+            if let due = plan.dueDate, !due.isEmpty {
                     Text("截止日期：\(due)")
                         .font(AppFonts.caption)
                         .foregroundStyle(.white)
@@ -110,12 +116,6 @@ struct GoalTrackingSectionView: View {
                         .background(AppColors.textBlack)
                         .cornerRadius(14)
                 }
-            }
-
-            Text(plan.title)
-                .font(AppFonts.body)
-                .foregroundStyle(AppColors.textBlack)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
     

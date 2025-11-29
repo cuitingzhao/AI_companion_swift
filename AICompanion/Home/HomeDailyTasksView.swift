@@ -15,6 +15,9 @@ public struct HomeDailyTasksView: View {
     @State private var showCompleteConfirmation: Bool = false
     @State private var showDeleteConfirmation: Bool = false
     @State private var taskForConfirmation: DailyTaskItemResponse?
+    
+    // Celebration effect state
+    @State private var showCelebration: Bool = false
 
     public init(userId: Int?) {
         self.userId = userId
@@ -224,6 +227,11 @@ public struct HomeDailyTasksView: View {
                 },
                 title: "删除任务"
             )
+            
+            // Celebration overlay
+            if showCelebration {
+                celebrationOverlay
+            }
         }
         .fullScreenCover(isPresented: $isShowingChat) {
             ChatView(viewModel: chatViewModel)
@@ -536,6 +544,13 @@ public struct HomeDailyTasksView: View {
 
                 _ = try await ExecutionsAPI.shared.updateExecution(executionId: task.executionId, request: request)
 
+                // Show celebration effect on task completion
+                if action == .complete {
+                    withAnimation {
+                        showCelebration = true
+                    }
+                }
+                
                 await viewModel.reloadPlanOnly()
             } catch {
                 print("❌ updateExecution error:", error)
@@ -546,6 +561,40 @@ public struct HomeDailyTasksView: View {
         }
     }
 
+    // MARK: - Celebration Overlay
+    
+    private var celebrationOverlay: some View {
+        ZStack {
+            // Semi-transparent background
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 16) {
+                // Celebration GIF
+                GIFImage(name: "celebrate")
+                    .frame(width: 280, height: 280)
+                
+                // Toast message
+                Text("🎉棒棒的，再接再厉！")
+                    .font(AppFonts.neoHeadline)
+                    .foregroundStyle(AppColors.textBlack)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(AppColors.neoWhite)
+                    .cornerRadius(12)
+                    .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+            }
+        }
+        .onAppear {
+            // Auto-dismiss after GIF plays (approximately 2 seconds)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                withAnimation {
+                    showCelebration = false
+                }
+            }
+        }
+    }
+    
     // MARK: - Helpers
 
     private func formattedSolarDate(_ dateString: String) -> String {
