@@ -23,7 +23,6 @@ public final class OnboardingState: ObservableObject {
         case kycEnd
         case goalChat
         case goalPlan
-        case taskForToday
         case home
     }
 

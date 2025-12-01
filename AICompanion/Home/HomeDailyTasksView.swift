@@ -1,4 +1,5 @@
 import SwiftUI
+import UserNotifications
 
 public struct HomeDailyTasksView: View {
     private let userId: Int?
@@ -18,6 +19,9 @@ public struct HomeDailyTasksView: View {
     
     // Celebration effect state
     @State private var showCelebration: Bool = false
+    
+    // Notification permission tracking
+    @AppStorage("hasRequestedNotificationPermission") private var hasRequestedNotificationPermission: Bool = false
 
     public init(userId: Int?) {
         self.userId = userId
@@ -59,6 +63,8 @@ public struct HomeDailyTasksView: View {
             viewModel.loadInitialDataIfNeeded()
             // Pre-warm chat data in background for faster chat opening
             chatViewModel.prewarm()
+            // Request notification permission on first visit
+            requestNotificationPermissionIfNeeded()
         }
         .onChange(of: selectedTab) { _, newTab in
             switch newTab {
@@ -315,6 +321,21 @@ public struct HomeDailyTasksView: View {
         }
     }
 
+    // MARK: - Notification Permission
+
+    private func requestNotificationPermissionIfNeeded() {
+        guard !hasRequestedNotificationPermission else { return }
+        
+        hasRequestedNotificationPermission = true
+        
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+            if let error = error {
+                print("❌ Notification permission error:", error)
+            } else {
+                print("✅ Notification permission granted:", granted)
+            }
+        }
+    }
 }
 
 #Preview {

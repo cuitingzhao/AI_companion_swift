@@ -8,6 +8,7 @@ public struct CitySearchField: View {
     @State private var isLoading: Bool = false
     @State private var showDropdown: Bool = false
     @State private var searchTask: Task<Void, Never>? = nil
+    @FocusState private var isTextFieldFocused: Bool
 
     public init(text: Binding<String>, onSelect: @escaping (City) -> Void) {
         self._text = text
@@ -16,12 +17,36 @@ public struct CitySearchField: View {
 
     public var body: some View {
         VStack(spacing: 8) {
-            AppTextField("出生地点", text: $text, accessory: {
+            HStack(spacing: 12) {
+                TextField("", text: $text)
+                    .font(AppFonts.body)
+                    .foregroundStyle(AppColors.textDark)
+                    .placeholder(when: text.isEmpty) {
+                        Text("出生地点")
+                            .foregroundStyle(AppColors.textLight)
+                            .font(AppFonts.body)
+                    }
+                    .focused($isTextFieldFocused)
+                
                 if isLoading {
                     ProgressView()
                         .progressViewStyle(.circular)
                 }
-            })
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
+            .background(AppColors.bgCream)
+            .cornerRadius(CuteClean.radiusMedium)
+            .overlay(
+                RoundedRectangle(cornerRadius: CuteClean.radiusMedium)
+                    .stroke(AppColors.cutePink.opacity(0.2), lineWidth: 1)
+            )
+            .onAppear {
+                // Auto-focus the text field when the view appears
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    isTextFieldFocused = true
+                }
+            }
             .onChange(of: text) { _, newValue in
                 performSearchDebounced(for: newValue)
             }
@@ -102,5 +127,20 @@ public struct CitySearchField: View {
             showDropdown = true
         }
         isLoading = false
+    }
+}
+
+private extension View {
+    func placeholder<Content: View>(
+        when shouldShow: Bool,
+        alignment: Alignment = .leading,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        ZStack(alignment: alignment) {
+            if shouldShow {
+                content()
+            }
+            self
+        }
     }
 }

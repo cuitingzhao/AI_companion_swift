@@ -152,10 +152,14 @@ public struct ChatView: View {
                                 ChatInputArea(
                                     draftMessage: $viewModel.draftMessage,
                                     inputMode: $viewModel.inputMode,
+                                    selectedImages: $viewModel.selectedImages,
                                     isSending: viewModel.isSending,
                                     onSend: { viewModel.sendCurrentMessage() },
                                     onVoiceComplete: { text in viewModel.sendMessage(text) },
-                                    onToggleInputMode: { viewModel.toggleInputMode() }
+                                    onToggleInputMode: { viewModel.toggleInputMode() },
+                                    onAddImage: { image in viewModel.addImage(image) },
+                                    onRemoveImage: { index in viewModel.removeImage(at: index) },
+                                    onClearImages: { viewModel.clearImages() }
                                 )
                             }
                             .padding(.horizontal, 24)

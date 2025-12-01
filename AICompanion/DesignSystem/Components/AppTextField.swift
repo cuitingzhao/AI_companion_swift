@@ -7,16 +7,19 @@ public struct AppTextField<Accessory: View>: View {
     private let accessory: Accessory
     private let submitLabel: SubmitLabel?
     private let onSubmit: (() -> Void)?
+    private let backgroundColor: Color
 
     public init(
         _ title: String,
         text: Binding<String>,
+        backgroundColor: Color = AppColors.bgCream,
         submitLabel: SubmitLabel? = nil,
         onSubmit: (() -> Void)? = nil,
         @ViewBuilder accessory: () -> Accessory = { EmptyView() }
     ) {
         self.title = title
         self.text = text
+        self.backgroundColor = backgroundColor
         self.accessory = accessory()
         self.submitLabel = submitLabel
         self.onSubmit = onSubmit
@@ -41,7 +44,7 @@ public struct AppTextField<Accessory: View>: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
-        .background(AppColors.bgCream)
+        .background(backgroundColor)
         .cornerRadius(CuteClean.radiusMedium)
         // Cute Clean: No shadow, subtle border only
         .overlay(

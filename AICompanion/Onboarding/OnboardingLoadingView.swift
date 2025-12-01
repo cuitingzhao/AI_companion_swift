@@ -3,8 +3,7 @@ import Combine
 
 public struct OnboardingLoadingView: View {
     @ObservedObject private var state: OnboardingState
-    private let wheelNamespace: Namespace.ID?
-    @State private var isSpinning = false
+    private let wheelNamespace: Namespace.ID?  // Kept for API compatibility
     @State private var hasSubmitted = false
     @State private var wavePhase: Double = 0
 
@@ -24,46 +23,31 @@ public struct OnboardingLoadingView: View {
                 .ignoresSafeArea()
                 .opacity(0.6)
 
-            VStack {
+            VStack(spacing: 16) {
                 Spacer()
 
-                Group {
-                    if let wheelNamespace {
-                        Image("fortune_wheel_small")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 160, height: 160)
-                            .matchedGeometryEffect(id: "fortuneWheel", in: wheelNamespace)
-                    } else {
-                        Image("fortune_wheel_small")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 160, height: 160)
-                    }
-                }
-                .rotationEffect(Angle.degrees(isSpinning ? 360 : 0))
-                .animation(.linear(duration: 1.2).repeatForever(autoreverses: false), value: isSpinning)
+                GIFImage(name: "thinking")
+                    .frame(width: 180, height: 180)
 
-                Spacer()
                 HStack(spacing: 0) {
-                    let characters = Array("为你计算生辰八字中")
+                    let characters = Array("努力工作中")
                     ForEach(characters.indices, id: \.self) { index in
                         let char = String(characters[index])
                         Text(char)
                             .baselineOffset(sin(wavePhase + Double(index) * 0.6) * 4)
                     }
                 }
-                .font(AppFonts.small)
+                .font(AppFonts.large)
                 .foregroundStyle(AppColors.neutralGray)
-                .padding(.bottom, 40)
                 .onReceive(Timer.publish(every: 0.06, on: .main, in: .common).autoconnect()) { _ in
                     wavePhase += 0.25
                 }
+
+                Spacer()
             }
         }
         .onAppear {
             print("🔄 OnboardingLoadingView appeared")
-            isSpinning = true
             if !hasSubmitted {
                 print("🔄 Starting submit task...")
                 hasSubmitted = true

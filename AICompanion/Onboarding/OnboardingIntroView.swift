@@ -10,41 +10,64 @@ public struct OnboardingIntroView: View {
         self.state = state
         self.onStart = onStart
     }
+    
+    private var canProceed: Bool {
+        state.isNicknameValid && state.acceptedTerms
+    }
 
     public var body: some View {
-        OnboardingScaffold(topSpacing: 180, header: { OnboardingHeader() }) {
-            VStack(spacing: 0) {
-                Spacer()
-                
-                VStack(spacing: 16) {
-                    Text("你的五行伙伴")
-                        .font(AppFonts.large)
+        OnboardingScaffold(
+            topSpacing: 80,
+            containerColor: AppColors.accentYellow.opacity(0.8),
+            isCentered: true,
+            verticalPadding: 48,
+            header: {
+                VStack(spacing: 8) {
+                    GIFImage(name: "winking")
+                        .frame(width: 180, height: 100)
+                    
+                    Text("陪你完成小目标的伙伴")
+                        .font(AppFonts.body)
+                        .foregroundStyle(AppColors.textMedium)
+                }
+            }
+        ) {
+            VStack(alignment: .center, spacing: 40) {
+                // Nickname input section
+                VStack(spacing: 12) {
+                    Text("👋 让我们认识一下？")
+                        .font(AppFonts.subtitle)
                         .foregroundStyle(AppColors.textBlack)
 
-                    Image("five_elements_together")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: 280)
-
-                    Text("不止是陪伴，\n也想帮你成为更好的自己")
-                        .multilineTextAlignment(.center)
+                    Text("我要如何称呼你呢？")
                         .font(AppFonts.body)
-                        .foregroundStyle(AppColors.neutralGray)
-                        .padding(.top, 4)
-                }
-                
-                Spacer()
+                        .foregroundStyle(AppColors.textMedium)
 
+                    AppTextField("昵称", text: Binding(
+                        get: { state.nickname },
+                        set: { newValue in
+                            state.nickname = state.sanitizeNickname(newValue)
+                        }
+                    ), backgroundColor: .white)
+                    .frame(maxWidth: 280)
+                }
+
+                // Button and T&C section
                 VStack(spacing: 12) {
-                    PrimaryButton(
-                        action: { onStart() },
-                        style: .init(variant: .filled, verticalPadding: 12)
-                    ) {
+                    Button(action: { onStart() }) {
                         Text("开始")
+                            .font(AppFonts.cuteButton)
                             .foregroundStyle(.white)
+                            .frame(maxWidth: 280)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: CuteClean.radiusMedium)
+                                    .fill(canProceed ? AppColors.primary : AppColors.primary.opacity(0.4))
+                            )
+                            .shadow(color: AppColors.shadowColor, radius: 6, x: 0, y: 6)
                     }
-                    .disabled(!state.acceptedTerms)
-                    .opacity(state.acceptedTerms ? 1 : 0.6)
+                    .buttonStyle(.plain)
+                    .disabled(!canProceed)
 
                     HStack(spacing: 8) {
                         Button(action: { state.acceptedTerms.toggle() }) {

@@ -5,17 +5,20 @@ import Foundation
 public struct ChatMessageRequest: Codable {
     public let userId: Int
     public let message: String
+    public let images: [String]?  // Base64 data URIs or URLs, max 4 images
     public let modelName: String?
 
-    public init(userId: Int, message: String, modelName: String? = nil) {
+    public init(userId: Int, message: String, images: [String]? = nil, modelName: String? = nil) {
         self.userId = userId
         self.message = message
+        self.images = images
         self.modelName = modelName
     }
 
     enum CodingKeys: String, CodingKey {
         case userId = "user_id"
         case message
+        case images
         case modelName = "model_name"
     }
 }
@@ -119,6 +122,7 @@ public struct ChatHistoryMessage: Codable, Identifiable {
     public let content: String
     public let createdAt: String
     public let toolCalls: [AnyCodable]?
+    public let attachments: [String]?  // Image URLs attached to this message
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -126,6 +130,7 @@ public struct ChatHistoryMessage: Codable, Identifiable {
         case content
         case createdAt = "created_at"
         case toolCalls = "tool_calls"
+        case attachments
     }
 }
 

@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import UIKit
 
 // MARK: - View Models
 
@@ -15,19 +16,28 @@ struct ChatMessage: Identifiable, Equatable {
     let sender: Sender
     let createdAt: Date?  // Timestamp for divider display
     let isDivider: Bool  // Special flag for date divider
+    let images: [UIImage]?  // Attached images for current session (not persisted)
+    let imageURLs: [String]?  // Image URLs from history (persisted)
 
-    init(text: String, sender: Sender, serverId: Int? = nil, createdAt: Date? = nil, isDivider: Bool = false) {
+    init(text: String, sender: Sender, serverId: Int? = nil, createdAt: Date? = nil, isDivider: Bool = false, images: [UIImage]? = nil, imageURLs: [String]? = nil) {
         self.id = serverId.map { "server-\($0)" } ?? UUID().uuidString
         self.serverId = serverId
         self.text = text
         self.sender = sender
         self.createdAt = createdAt
         self.isDivider = isDivider
+        self.images = images
+        self.imageURLs = imageURLs
     }
     
     /// Creates a date divider message
     static func divider(date: Date) -> ChatMessage {
         ChatMessage(text: "", sender: .ai, createdAt: date, isDivider: true)
+    }
+    
+    // Equatable conformance - compare by id only since UIImage isn't Equatable
+    static func == (lhs: ChatMessage, rhs: ChatMessage) -> Bool {
+        lhs.id == rhs.id && lhs.text == rhs.text && lhs.isDivider == rhs.isDivider
     }
 }
 
@@ -40,6 +50,7 @@ class ChatViewModel: ObservableObject {
     // Data
     @Published var messages: [ChatMessage] = []
     @Published var draftMessage: String = ""
+    @Published var selectedImages: [UIImage] = []  // Images pending to be sent
     
     // UI State
     @Published var isSending: Bool = false
@@ -83,8 +94,12 @@ class ChatViewModel: ObservableObject {
     }
     
     func loadInitialHistory() {
-        guard !hasLoadedInitialHistory else { return }
+        guard !hasLoadedInitialHistory else { 
+            print("📜 Initial history already loaded, skipping")
+            return 
+        }
         hasLoadedInitialHistory = true
+        print("📜 Loading initial history for user \(userId)...")
         
         Task {
             // Fetch greeting and history in parallel for faster loading
@@ -104,8 +119,10 @@ class ChatViewModel: ObservableObject {
             // Wait for both to complete
             let (greetingMessage, _) = await (greetingTask, historyTask)
             
+            print("📜 History loaded, messages count: \(messages.count)")
+            
             // Add date divider if there's history (between history and new greeting)
-            if let newestHistoryMessage = messages.first, let lastDate = newestHistoryMessage.createdAt {
+            if let newestHistoryMessage = messages.last, let lastDate = newestHistoryMessage.createdAt {
                 print("📅 Adding date divider after history, newest message date: \(lastDate)")
                 messages.append(ChatMessage.divider(date: lastDate))
             } else if !messages.isEmpty {
@@ -122,6 +139,7 @@ class ChatViewModel: ObservableObject {
             
             // Done loading
             isInitialLoading = false
+            print("📜 Initial loading complete, total messages: \(messages.count)")
         }
     }
     
@@ -135,25 +153,49 @@ class ChatViewModel: ObservableObject {
     
     func sendCurrentMessage() {
         guard !isSending else { return }
-        let content = draftMessage
+        let content = draftMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Require text for all messages (including those with images)
+        guard !content.isEmpty else {
+            if !selectedImages.isEmpty {
+                showToast(message: "请输入消息内容", type: .error)
+            }
+            return
+        }
+        
+        let images = selectedImages
         draftMessage = ""
-        sendMessage(content)
+        selectedImages = []
+        sendMessage(content, images: images)
     }
     
-    func sendMessage(_ content: String) {
+    func sendMessage(_ content: String, images: [UIImage] = []) {
         let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Require text for all messages
         guard !trimmed.isEmpty else { return }
         
-        let userMessage = ChatMessage(text: trimmed, sender: .user)
+        let userMessage = ChatMessage(text: trimmed, sender: .user, images: images.isEmpty ? nil : images)
         messages.append(userMessage)
         isSending = true
         errorText = nil
         
-        let request = ChatMessageRequest(userId: userId, message: trimmed)
-        
         Task {
             do {
-                // Use non-streaming endpoint
+                // Step 1: Upload images to OSS first (if any)
+                var imageURLs: [String]? = nil
+                if !images.isEmpty {
+                    imageURLs = []
+                    for image in images {
+                        if let base64Data = convertImageToBase64DataURI(image) {
+                            let uploadResponse = try await MediaAPI.shared.uploadImage(userId: userId, imageData: base64Data)
+                            imageURLs?.append(uploadResponse.url)
+                            print("📷 Image uploaded: \(uploadResponse.url)")
+                        }
+                    }
+                }
+                
+                // Step 2: Send chat message with image URLs
+                let request = ChatMessageRequest(userId: userId, message: trimmed, images: imageURLs)
                 let response = try await ChatAPI.shared.sendMessage(request)
                 
                 // Add AI reply message
@@ -164,12 +206,38 @@ class ChatViewModel: ObservableObject {
                 // Per backend contract: client should read from pending_client_actions at top level
                 await handlePendingActions(response.pendingClientActions)
                 
+            } catch let error as MediaAPIError {
+                switch error {
+                case .uploadFailed(let message):
+                    errorText = message
+                default:
+                    errorText = "图片上传失败，请稍后再试。"
+                }
+                print("❌ Media upload error:", error)
             } catch {
                 errorText = "消息发送失败，请检查网络后稍后再试。"
                 print("❌ Chat message error:", error)
             }
             isSending = false
         }
+    }
+    
+    func addImage(_ image: UIImage) {
+        // Only allow 1 image per message
+        guard selectedImages.isEmpty else {
+            showToast(message: "每条消息只能添加1张图片", type: .error)
+            return
+        }
+        selectedImages.append(image)
+    }
+    
+    func removeImage(at index: Int) {
+        guard index >= 0 && index < selectedImages.count else { return }
+        selectedImages.remove(at: index)
+    }
+    
+    func clearImages() {
+        selectedImages.removeAll()
     }
     
     func requestPermissionAndExecute() async {
@@ -255,19 +323,31 @@ class ChatViewModel: ObservableObject {
                 // Backend now returns plain text
                 let text = msg.content.trimmingCharacters(in: .whitespacesAndNewlines)
                 let timestamp = parseISO8601Date(msg.createdAt)
-                return ChatMessage(text: text, sender: sender, serverId: msg.id, createdAt: timestamp)
+                // Include attachments (image URLs) from history
+                let imageURLs = msg.attachments
+                print("📜 Message \(msg.id): role=\(msg.role), attachments=\(imageURLs ?? [])")
+                return ChatMessage(text: text, sender: sender, serverId: msg.id, createdAt: timestamp, imageURLs: imageURLs)
             }
             
             if beforeId == nil {
                 // Initial load - replace messages
                 messages = historyMessages
+                print("📜 Set messages to \(historyMessages.count) history messages")
             } else {
                 // Pagination - prepend older messages
                 messages.insert(contentsOf: historyMessages, at: 0)
+                print("📜 Prepended \(historyMessages.count) older messages")
             }
             
             hasMoreHistory = response.hasMore
             oldestMessageId = response.oldestId
+        } catch let error as DecodingError {
+            print("❌ Failed to decode chat history: \(error)")
+            if case .keyNotFound(let key, let context) = error {
+                print("❌ Missing key: \(key.stringValue), path: \(context.codingPath)")
+            } else if case .typeMismatch(let type, let context) = error {
+                print("❌ Type mismatch: expected \(type), path: \(context.codingPath)")
+            }
         } catch {
             print("❌ Failed to load chat history:", error)
             // Don't show error for initial load if no history exists
@@ -363,6 +443,34 @@ class ChatViewModel: ObservableObject {
             return date
         }
         return Self.simpleDateFormatter.date(from: dateString)
+    }
+    
+    /// Converts UIImage to base64 data URI for API request
+    private func convertImageToBase64DataURI(_ image: UIImage) -> String? {
+        // Resize image aggressively (max 512px on longest side for faster upload)
+        let maxDimension: CGFloat = 256
+        var targetImage = image
+        
+        if image.size.width > maxDimension || image.size.height > maxDimension {
+            let scale = maxDimension / max(image.size.width, image.size.height)
+            let newSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+            
+            UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
+            image.draw(in: CGRect(origin: .zero, size: newSize))
+            if let resizedImage = UIGraphicsGetImageFromCurrentImageContext() {
+                targetImage = resizedImage
+            }
+            UIGraphicsEndImageContext()
+        }
+        
+        // Convert to JPEG with 0.6 quality for aggressive compression
+        guard let imageData = targetImage.jpegData(compressionQuality: 0.6) else {
+            print("❌ Failed to convert image to JPEG data")
+            return nil
+        }
+        
+        let base64String = imageData.base64EncodedString()
+        return "data:image/jpeg;base64,\(base64String)"
     }
 }
 

@@ -30,25 +30,13 @@ public struct GoalPlanView: View {
                 }
 
                 VStack(spacing: 12) {
-                    PrimaryButton(
-                        action: {
-                            print("✅ User chose to start tasks today")
-                            state.currentStep = .taskForToday
-                        },
-                        style: .init(variant: .filled, verticalPadding: 12)
-                    ) {
-                        Text("立即开始")
-                            .foregroundStyle(.white)
+                    SimpleButton("立即开始", variant: .filled) {
+                        print("✅ User chose to start tasks today")
+                        state.currentStep = .home
                     }
 
-                    PrimaryButton(
-                        action: {
-                            print("ℹ️ User chose to start tasks tomorrow")
-                        },
-                        style: .init(variant: .outlined, verticalPadding: 12)
-                    ) {
-                        Text("明天再提醒我")
-                            .foregroundStyle(AppColors.purple)
+                    SimpleButton("明天再提醒我", variant: .outlined) {
+                        print("ℹ️ User chose to start tasks tomorrow")
                     }
                 }
                 .padding(.horizontal, 16)
@@ -58,7 +46,7 @@ public struct GoalPlanView: View {
         .overlay(
             AppDialog(
                 isPresented: $isIntroDialogPresented,
-                message: "这是为你制定的计划。随着我对你的了解加深，这个计划也会不断调整。我每天会从计划中挑选部分事项，你可以在每日待办页面查看。",
+                message: "这是你的专属计划，它将随着对你的了解而动态优化。请关注每日待办列表哦！",
                 primaryTitle: "知道了",
                 primaryAction: {},
                 title: "目标计划说明"

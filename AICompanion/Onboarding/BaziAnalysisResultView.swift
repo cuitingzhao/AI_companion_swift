@@ -2,13 +2,15 @@ import SwiftUI
 
 public struct BaziAnalysisResultView: View {
     @ObservedObject private var state: OnboardingState
-    private let onNext: () -> Void
+    private let onStart: () -> Void
+    private let onSkip: () -> Void
     @State private var animatePillars = false
-    @State private var isDayMasterHighlighted = false
+    @State private var isBreathing = false
 
-    public init(state: OnboardingState, onNext: @escaping () -> Void = {}) {
+    public init(state: OnboardingState, onStart: @escaping () -> Void = {}, onSkip: @escaping () -> Void = {}) {
         self.state = state
-        self.onNext = onNext
+        self.onStart = onStart
+        self.onSkip = onSkip
     }
 
     private var response: OnboardingSubmitResponse? {
@@ -30,6 +32,20 @@ public struct BaziAnalysisResultView: View {
     private var partnerName: String {
         guard let element = elementForStem(dayHeavenlyStem) else { return "" }
         return "\(element)宝"
+    }
+
+    private var dayMasterElement: String? {
+        elementForStem(dayHeavenlyStem)
+    }
+
+    private var dayMasterLabel: String {
+        guard let element = dayMasterElement else { return "" }
+        return "「\(dayHeavenlyStem)\(element)」"
+    }
+
+    private var dayMasterColor: Color {
+        guard let element = dayMasterElement else { return AppColors.textBlack }
+        return color(forElement: element)
     }
 
     private func elementForStem(_ stem: String) -> String? {
@@ -104,14 +120,33 @@ public struct BaziAnalysisResultView: View {
     }
 
     public var body: some View {
-        OnboardingScaffold(topSpacing: 180, header: { OnboardingHeader() }) {
+        OnboardingScaffold(
+            // topSpacing: 80, 
+            containerColor: .white.opacity(0.8),
+            // isCentered: true,
+            // verticalPadding: 48,
+            header: { 
+                VStack(spacing: 8) {                  
+                    GIFImage(name: "winking")
+                            .frame(width: 180, height: 100)}
+         }) {
             VStack(spacing: 0) {
                 Spacer()
 
                 // Main content in the middle of the container
                 VStack(spacing: 20) {
                     if let bazi {
-                        // Bazi pillars in center
+                        // Day master label above the pillars with breathing effect
+                        if !dayMasterLabel.isEmpty {
+                            Text(dayMasterLabel)
+                                .font(.system(size: 48, weight: .bold, design: .rounded))
+                                .foregroundStyle(dayMasterColor)
+                                .scaleEffect(isBreathing ? 1.05 : 1.0)
+                                .opacity(isBreathing ? 1.0 : 0.85)
+                                .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: isBreathing)
+                        }
+
+                        // Bazi pillars in container
                         let pillars: [Ganzhi] = [
                             bazi.yearGanzhi,
                             bazi.monthGanzhi,
@@ -119,32 +154,36 @@ public struct BaziAnalysisResultView: View {
                             bazi.hourGanzhi
                         ]
 
-                        HStack(spacing: 24) {
+                        HStack(spacing: 20) {
                             ForEach(0..<pillars.count, id: \.self) { index in
                                 let pillar = pillars[index]
                                 let stemIndex = index * 2
                                 let branchIndex = index * 2 + 1
-                                let isDayPillar = (index == 2)
 
-                                VStack(spacing: 8) {
+                                VStack(spacing: 6) {
                                     Text(pillar.heavenlyStem)
-                                        .font(AppFonts.title)
+                                        .font(.system(size: 40, weight: .semibold, design: .rounded))
                                         .foregroundStyle(colorForHeavenlyStem(pillar.heavenlyStem))
-                                        .scaleEffect(animatePillars ? (isDayPillar && isDayMasterHighlighted ? 1.08 : 1.0) : 0.9)
+                                        .scaleEffect(animatePillars ? 1.0 : 0.9)
                                         .opacity(animatePillars ? 1 : 0.7)
-                                        .shadow(color: Color.black.opacity(0.18), radius: 4, x: 0, y: 2)
                                         .animation(characterAnimation(index: stemIndex), value: animatePillars)
 
                                     Text(pillar.earthlyBranch)
-                                        .font(AppFonts.title)
+                                        .font(.system(size: 40, weight: .semibold, design: .rounded))
                                         .foregroundStyle(colorForEarthlyBranch(pillar.earthlyBranch))
                                         .scaleEffect(animatePillars ? 1 : 0.9)
                                         .opacity(animatePillars ? 1 : 0.7)
-                                        .shadow(color: Color.black.opacity(0.14), radius: 4, x: 0, y: 2)
                                         .animation(characterAnimation(index: branchIndex), value: animatePillars)
                                 }
                             }
                         }
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 20)
+                        .background(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(AppColors.primary.opacity(0.2))
+                        )
+                        .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 4)
                     } else if let chartText = analysis?.chartText, !chartText.isEmpty {
                         Text(chartText)
                             .font(AppFonts.body)
@@ -159,7 +198,7 @@ public struct BaziAnalysisResultView: View {
                     }
 
                     if !dayHeavenlyStem.isEmpty, !partnerName.isEmpty {
-                        Text("你的八字日主是\(dayHeavenlyStem)，\n为你分配「\(partnerName)」作为你的伙伴，\n希望你们相处的愉快！")
+                        Text("根据你的八字，\n我初步推测了你的性格，\n能请你确认一下吗？")
                             .font(AppFonts.body)
                             .multilineTextAlignment(.center)
                             .foregroundStyle(AppColors.textBlack)
@@ -169,26 +208,19 @@ public struct BaziAnalysisResultView: View {
                 .onAppear {
                     // Trigger entrance animation for pillars
                     animatePillars = false
-                    isDayMasterHighlighted = false
+                    isBreathing = false
                     DispatchQueue.main.async {
                         animatePillars = true
-                        withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
-                            isDayMasterHighlighted.toggle()
-                        }
+                        isBreathing = true
                     }
                 }
 
                 Spacer()
 
-                // Bottom CTA block, aligned with other onboarding screens
+                // Bottom CTA block with two buttons
                 VStack(spacing: 12) {
-                    PrimaryButton(
-                        action: onNext,
-                        style: .init(variant: .filled, verticalPadding: 12)
-                    ) {
-                        Text("下一步")
-                            .foregroundStyle(.white)
-                    }
+                    SimpleButton("好的", variant: .filled, action: onStart)
+                    SimpleButton("暂时跳过", variant: .outlined, action: onSkip)
                 }
             }
         }

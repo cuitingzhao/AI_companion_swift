@@ -83,15 +83,17 @@ public struct GoalOnboardingChatView: View {
                                     )
                                     Spacer()
                                 }
+                                .id("loading-indicator")
                             }
                         }
                         .padding(.vertical, 8)
                     }
                     .onChange(of: messages.count) { _, _ in
-                        if let lastId = messages.last?.id {
-                            withAnimation {
-                                proxy.scrollTo(lastId, anchor: .bottom)
-                            }
+                        scrollToBottom(proxy: proxy)
+                    }
+                    .onChange(of: isSending) { _, sending in
+                        if sending {
+                            scrollToBottom(proxy: proxy, toLoading: true)
                         }
                     }
                 }
@@ -217,6 +219,18 @@ public struct GoalOnboardingChatView: View {
         }
     }
 
+    private func scrollToBottom(proxy: ScrollViewProxy, toLoading: Bool = false) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation {
+                if toLoading {
+                    proxy.scrollTo("loading-indicator", anchor: .bottom)
+                } else if let lastId = messages.last?.id {
+                    proxy.scrollTo(lastId, anchor: .bottom)
+                }
+            }
+        }
+    }
+
     private func chatBubble(for message: Message) -> some View {
         HStack {
             if message.sender == .ai {
@@ -232,11 +246,21 @@ public struct GoalOnboardingChatView: View {
     private func bubbleView(text: String, isUser: Bool) -> some View {
         Text(text)
             .font(AppFonts.body)
-            .foregroundStyle(AppColors.textBlack)
+            .foregroundStyle(isUser ? .white : AppColors.textBlack)
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(isUser ? AppColors.neutralGray : Color.white)
-            .cornerRadius(18)
+            .padding(.vertical, 12)
+            .background(isUser ? AppColors.neoPurple : Color.white)
+            .cornerRadius(NeoBrutal.radiusMedium)
+            .overlay(
+                RoundedRectangle(cornerRadius: NeoBrutal.radiusMedium)
+                    .stroke(isUser ? AppColors.neoBlack : Color.clear, lineWidth: NeoBrutal.borderThin)
+            )
+            .shadow(
+                color: isUser ? AppColors.shadowColor : Color.clear,
+                radius: 0,
+                x: isUser ? -3 : 0,
+                y: isUser ? 3 : 0
+            )
     }
 
     @ViewBuilder
@@ -275,7 +299,7 @@ public struct GoalOnboardingChatView: View {
     private func setupInitialMessage() {
         guard messages.isEmpty else { return }
         let nickname = state.nickname
-        let text = "\(nickname)，太棒了！现在我们一起来设定一个你真正想完成的目标吧。你可以先告诉我，你最近最想达成的一个目标是什么？"
+        let text = "太棒了🎉 能跟我说说你想达成的目标是什么吗？"
         let message = Message(text: text, sender: .ai)
         messages.append(message)
     }

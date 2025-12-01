@@ -17,12 +17,13 @@ struct AICompanionApp: App {
                 switch onboardingState.currentStep {
                 case .intro:
                     OnboardingIntroView(state: onboardingState) {
-                        print("🟣 Navigating from intro to nickname")
-                        onboardingState.currentStep = .nickname
+                        print("🟣 Navigating from intro to profile")
+                        onboardingState.currentStep = .profile
                     }
                 case .nickname:
-                    OnboardingNicknameView(state: onboardingState) {
-                        print("🟣 Navigating from nickname to profile")
+                    // Nickname is now consolidated into intro view, redirect to profile
+                    OnboardingIntroView(state: onboardingState) {
+                        print("🟣 Navigating from intro to profile")
                         onboardingState.currentStep = .profile
                     }
                 case .profile:
@@ -33,16 +34,22 @@ struct AICompanionApp: App {
                 case .loading:
                     OnboardingLoadingView(state: onboardingState, wheelNamespace: wheelNamespace)
                 case .baziResult:
-                    BaziAnalysisResultView(state: onboardingState) {
-                        print("🟣 Navigating from baziResult to kycIntro")
-                        onboardingState.currentStep = .kycIntro
-                    }
+                    BaziAnalysisResultView(
+                        state: onboardingState,
+                        onStart: {
+                            print("🟣 Navigating from baziResult to kycPersonality")
+                            onboardingState.currentPersonalityIndex = 0
+                            onboardingState.currentStep = .kycPersonality
+                        },
+                        onSkip: {
+                            print("🟣 Skipping KYC, navigating to goalChat")
+                            UserDefaults.standard.set(true, forKey: OnboardingState.StorageKeys.completed)
+                            onboardingState.currentStep = .goalChat
+                        }
+                    )
                 case .kycIntro:
-                    KYCIntroView(state: onboardingState, onSkip: {
-                        print("🟣 Navigating from kycIntro to kycPersonality")
-                        onboardingState.currentPersonalityIndex = 0
-                        onboardingState.currentStep = .kycPersonality
-                    })
+                    // KYCIntroView is now consolidated into BaziAnalysisResultView, redirect to kycPersonality
+                    KYCPersonalityReviewView(state: onboardingState)
                 case .kycPersonality:
                     KYCPersonalityReviewView(state: onboardingState)
                 case .kycPersonalityEnd:
@@ -62,14 +69,6 @@ struct AICompanionApp: App {
                     GoalOnboardingChatView(state: onboardingState)
                 case .goalPlan:
                     GoalPlanView(state: onboardingState)
-                case .taskForToday:
-                    TaskForTodayView(
-                        userId: onboardingState.submitUserId,
-                        onStart: {
-                            print("🟣 Navigating from TaskForTodayView to home")
-                            onboardingState.currentStep = .home
-                        }
-                    )
                 case .home:
                     HomeDailyTasksView(
                         userId: onboardingState.submitUserId

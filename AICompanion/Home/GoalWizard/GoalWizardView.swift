@@ -622,3 +622,12 @@ public struct GoalWizardView: View {
         onDismiss()
     }
 }
+
+#Preview {
+    GoalWizardView(
+        userId: 1,
+        candidateDescription: nil,
+        source: "preview",
+        onDismiss: {}
+    )
+}

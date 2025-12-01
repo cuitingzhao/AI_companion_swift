@@ -223,23 +223,18 @@ public struct KYCPersonalityReviewView: View {
 
                 // Primary CTA
                 VStack(spacing: 12) {
-                    PrimaryButton(
-                        action: handlePrimaryAction,
-                        style: .init(variant: .filled, verticalPadding: 12)
-                    ) {
-                        Text(primaryButtonTitle)
-                            .foregroundStyle(.white)
-                    }
-                    .disabled(selectedRating == nil)
-                    .opacity(selectedRating == nil ? 0.6 : 1)
+                    SimpleButton(
+                        primaryButtonTitle,
+                        variant: .filled,
+                        isEnabled: selectedRating != nil,
+                        action: handlePrimaryAction
+                    )
 
-                    PrimaryButton(
-                        action: handleSkip,
-                        style: .init(variant: .outlined, verticalPadding: 12)
-                    ) {
-                        Text("跳过")
-                            .foregroundStyle(AppColors.purple)
-                    }
+                    SimpleButton(
+                        "跳过",
+                        variant: .outlined,
+                        action: handleSkip
+                    )
                 }
             }
         }
@@ -270,7 +265,7 @@ public struct KYCPersonalityReviewView: View {
         .overlay(
             AppDialog(
                 isPresented: $isSkipDialogPresented,
-                message: "了解你的性格能帮我给出更好的建议，确定要跳过这个环节吗？",
+                message: "了解你的性格能让我给出更好的建议，确定要跳过这个环节吗？",
                 primaryTitle: "确定",
                 primaryAction: {
                     confirmSkip()

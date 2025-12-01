@@ -8,7 +8,6 @@ public struct KYCChatView: View {
     @State private var isSending: Bool = false
     @State private var errorText: String?
     @State private var inputMode: InputMode = .text
-    @State private var keyboardHeight: CGFloat = 0
 
     public init(state: OnboardingState) {
         self.state = state
@@ -56,21 +55,17 @@ public struct KYCChatView: View {
                                     ChatBubbleLoadingIndicator(isActive: $isSending)
                                     Spacer()
                                 }
+                                .id("loading-indicator")
                             }
                         }
                         .padding(.vertical, 8)
                     }
                     .onChange(of: messages.count) { _, _ in
-                        if let lastId = messages.last?.id {
-                            withAnimation {
-                                proxy.scrollTo(lastId, anchor: .bottom)
-                            }
-                        }
+                        scrollToBottom(proxy: proxy)
                     }
                     .onChange(of: isSending) { _, sending in
-                        guard sending, let lastId = messages.last?.id else { return }
-                        withAnimation {
-                            proxy.scrollTo(lastId, anchor: .bottom)
+                        if sending {
+                            scrollToBottom(proxy: proxy, toLoading: true)
                         }
                     }
                 }
@@ -85,21 +80,19 @@ public struct KYCChatView: View {
                 inputArea
             }
         }
-        .padding(.bottom, keyboardHeight)
-        .animation(.easeOut(duration: 0.25), value: keyboardHeight)
         .onAppear(perform: setupInitialMessage)
-        .onReceive(NotificationCenter.default.publisher(for: .keyboardWillShow)) { notification in
-            if let frameValue = notification.userInfo?[KeyboardNotificationKeys.frameEnd] as? NSValue {
-                keyboardHeight = frameValue.cgRectValue.height
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .keyboardWillHide)) { _ in
-            keyboardHeight = 0
-        }
     }
 
-    private enum KeyboardNotificationKeys {
-        static let frameEnd = "UIKeyboardFrameEndUserInfoKey"
+    private func scrollToBottom(proxy: ScrollViewProxy, toLoading: Bool = false) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation {
+                if toLoading {
+                    proxy.scrollTo("loading-indicator", anchor: .bottom)
+                } else if let lastId = messages.last?.id {
+                    proxy.scrollTo(lastId, anchor: .bottom)
+                }
+            }
+        }
     }
 
     private func chatBubble(for message: Message) -> some View {
@@ -117,11 +110,21 @@ public struct KYCChatView: View {
     private func bubbleView(text: String, isUser: Bool) -> some View {
         Text(text)
             .font(AppFonts.body)
-            .foregroundStyle(AppColors.textBlack)
+            .foregroundStyle(isUser ? .white : AppColors.textBlack)
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(isUser ? AppColors.neutralGray : Color.white)
-            .cornerRadius(18)
+            .padding(.vertical, 12)
+            .background(isUser ? AppColors.neoPurple : Color.white)
+            .cornerRadius(NeoBrutal.radiusMedium)
+            .overlay(
+                RoundedRectangle(cornerRadius: NeoBrutal.radiusMedium)
+                    .stroke(isUser ? AppColors.neoBlack : Color.clear, lineWidth: NeoBrutal.borderThin)
+            )
+            .shadow(
+                color: isUser ? AppColors.shadowColor : Color.clear,
+                radius: 0,
+                x: isUser ? -3 : 0,
+                y: isUser ? 3 : 0
+            )
     }
 
     @ViewBuilder
@@ -159,7 +162,7 @@ public struct KYCChatView: View {
     private func setupInitialMessage() {
         guard messages.isEmpty else { return }
         let nickname = state.nickname
-        let text = "嗨，\(nickname)，能否告诉我，你现在所在的城市是？"
+        let text = "能否告诉我，你现在所在的城市是？"
         let message = Message(text: text, sender: .ai)
         messages.append(message)
 
@@ -300,11 +303,6 @@ public struct KYCChatView: View {
             }
         }
     }
-}
-
-private extension Notification.Name {
-    static let keyboardWillShow = Notification.Name("UIKeyboardWillShowNotification")
-    static let keyboardWillHide = Notification.Name("UIKeyboardWillHideNotification")
 }
 
 #Preview {

@@ -21,11 +21,11 @@ public struct PersonalityReviewEndView: View {
         let fullText1: String
         switch state.personalityEndSource {
         case .fromFeedback:
-            fullText1 = "不错哦，我现在已经大致对你的性格有了一个了解。"
+            fullText1 = "不错哦😄，你的反馈让我对你的性格有了更深入的了解！"
         case .skip:
-            fullText1 = "好的，那就让我在聊天中慢慢了解你的性格"
+            fullText1 = "好的，那就让我在之后的陪伴中慢慢了解你的性格 ❤️"
         }
-        let fullText2 = "除了陪伴，我的另一个使命是帮你完成一个又一个小目标，成为你想成为的自己。所以我想了解一下你的基本状况，你同意吗？"
+        let fullText2 = "悄悄告诉你🤫，我的另一个小心愿，就是陪你完成每一个闪闪发光的小目标✨！为了能给你准备“独家攻略”，我可以了解一下你的基本情况吗？"
 
         isTypingFirst = true
         type(text: fullText1, intoFirst: true) {
@@ -62,7 +62,13 @@ public struct PersonalityReviewEndView: View {
     }
 
     public var body: some View {
-        OnboardingScaffold(topSpacing: 60, containerColor: .clear, header: { EmptyView() }) {
+        OnboardingScaffold(topSpacing: 60, 
+        containerColor: .clear, 
+        header: {              
+                VStack(spacing: 8) {                  
+                    GIFImage(name: "winking")
+                            .frame(width: 180, height: 100)}
+        }) {
             VStack(spacing: 24) {
                 Spacer()
 
@@ -100,22 +106,12 @@ public struct PersonalityReviewEndView: View {
                 Spacer()
 
                 VStack(spacing: 12) {
-                    PrimaryButton(
-                        action: {
-                            state.currentStep = .kycChat
-                        },
-                        style: .init(variant: .filled, verticalPadding: 12)
-                    ) {
-                        Text("继续")
-                            .foregroundStyle(.white)
+                    SimpleButton("继续", variant: .filled) {
+                        state.currentStep = .kycChat
                     }
 
-                    PrimaryButton(
-                        action: { isShowingSkipDialog = true },
-                        style: .init(variant: .outlined, verticalPadding: 12)
-                    ) {
-                        Text("跳过")
-                            .foregroundStyle(AppColors.purple)
+                    SimpleButton("跳过", variant: .outlined) {
+                        isShowingSkipDialog = true
                     }
                 }
                 .padding(.bottom, 40)

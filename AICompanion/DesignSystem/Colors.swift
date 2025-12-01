@@ -11,7 +11,7 @@ public enum AppColors {
     public static let tertiary = Color(hex: "F1A522")       // Warm gold - highlights    
     
     // MARK: - Accent Colors
-    public static let accentBlue = Color(hex: "6BA3BE")     // Calm teal-blue
+    public static let accentBlue = Color(hex: "38b6ff")     // Sky blue
     public static let accentCoral = Color(hex: "E07A5F")    // Warm coral (alerts, energy)
     public static let accentPurple = Color(hex: "9B8EC4")   // Soft purple (fortune/mystical)
     public static let accentGreen = Color(hex: "14ce75")    // Same as primary
@@ -76,9 +76,9 @@ public enum AppColors {
 
     // MARK: - Element colors (Five Elements)
     public static let elementGold = tertiary
-    public static let elementWood = primary
+    public static let elementWood = accentGreen
     public static let elementWater = accentBlue
-    public static let elementFire = accentCoral
+    public static let elementFire = Color(hex: "FF604A")
     public static let elementEarth = Color(hex: "B8A898")
     
     // MARK: - Shadow Color

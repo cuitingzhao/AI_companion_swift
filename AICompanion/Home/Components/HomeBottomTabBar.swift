@@ -21,10 +21,10 @@ struct HomeBottomTabBar: View {
         HStack(spacing: 8) {
             tabItem(icon: "checkmark.circle.fill", label: "每日待办", tab: .daily)
             tabItem(icon: "target", label: "目标追踪", tab: .goals)
-            // Hidden for now - feature not ready
+            // Hidden for now - other features not ready
             // tabItem(icon: "sparkles", label: "流年推测", tab: .fortune)
             // tabItem(icon: "person.crop.circle", label: "性格密码", tab: .personality)
-            tabItem(icon: "gearshape.fill", label: "设置", tab: .settings)
+            // tabItem(icon: "gearshape.fill", label: "设置", tab: .settings)
         }
         .padding(.horizontal, 20)
         .padding(.top, 12)
