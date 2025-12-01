@@ -21,12 +21,20 @@ public struct OnboardingSubmitResponse: Codable {
     public let bazi: BaziData?
     public let baziAnalysis: BaziAnalysisResult
     public let personalityTraits: [PersonalityTrait]?
+    
+    // Token fields (new: guest user receives tokens after onboarding submit)
+    public let accessToken: String?
+    public let refreshToken: String?
+    public let expiresIn: Int?
 
     enum CodingKeys: String, CodingKey {
         case userId = "user_id"
         case bazi = "bazi_data"
         case baziAnalysis = "bazi_analysis"
         case personalityTraits = "personality_traits"
+        case accessToken = "access_token"
+        case refreshToken = "refresh_token"
+        case expiresIn = "expires_in"
     }
 }
 

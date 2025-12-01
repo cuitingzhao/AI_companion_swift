@@ -21,6 +21,6 @@ struct ChatHeader: View {
             Spacer()
         }
         .padding(.horizontal, 24)
-        .padding(.vertical, 12)
+        .padding(.vertical, 4)
     }
 }

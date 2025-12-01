@@ -28,7 +28,8 @@ This is the primary chat endpoint for the AI companion. It:
 | --- | --- | --- | --- |
 | `user_id` | integer | Yes | User ID (must be > 0). |
 | `message` | string | Yes | User's chat message (1-4000 characters). |
-| `model_name` | string | No | Optional model override. Defaults to `MODEL_MAIN_CHAT` env var or `deepseek-chat`. |
+| `images` | array of string | No | List of image URLs (http/https) or base64 data URIs. Max 4 images per message. When provided, uses vision model (Doubao-Seed-1.6). |
+| `model_name` | string | No | Optional model override. Defaults to `MODEL_MAIN_CHAT` env var or `deepseek-chat`. Ignored when images are provided. |
 
 ### Response — [`ChatMessageResponse`](../app/schemas/chat.py)
 
@@ -265,10 +266,38 @@ curl -X POST "http://localhost:8000/api/v1/chat/message?enable_tools=true" \
 }
 ```
 
+### Example Request (with image)
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/chat/message" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": 1,
+    "message": "这张图片里是什么？",
+    "images": ["https://example.com/photo.jpg"]
+  }'
+```
+
+### Example Response (image analysis)
+
+```json
+{
+  "reply": "这张图片展示的是一个美丽的海滩日落场景。天空呈现出橙红色和紫色的渐变，海浪轻轻拍打着沙滩...",
+  "tool_calls_made": [],
+  "pending_client_actions": []
+}
+```
+
+**Note:** When images are provided:
+- The vision model (Doubao-Seed-1.6) is automatically used
+- Tool calling is disabled (vision model focuses on image understanding)
+- Images are stored in message attachments for history
+
 ### Errors
 
 | Status Code | Description |
 | --- | --- |
+| `400 Bad Request` | Too many images (max 4 allowed per message). |
 | `422 Unprocessable Entity` | Invalid request body (missing fields, invalid types). |
 | `500 Internal Server Error` | AI model error or unexpected failure. |
 
@@ -336,7 +365,7 @@ assistant typing in real time.
 | Event | Description | Data Payload Example |
 | --- | --- | --- |
 | `token` | A partial piece of the assistant reply. Append `content` to the UI buffer. | `{"content": "你好"}` |
-| `done` | Final event with the full reply and optional `events` array. | `{"reply": "完整回复...", "events": []}` |
+| `done` | Final event with the full reply. | `{"reply": "完整回复..."}` |
 | `error` | Indicates a failure during streaming. | `{"error": "Internal server error"}` |
 
 ##### `token` Events
@@ -357,15 +386,11 @@ arrives.
 ```text
 event: done
 data: {
-  "reply": "你好，我是你的 AI 伙伴，很高兴认识你！",
-  "events": []
+  "reply": "你好，我是你的 AI 伙伴，很高兴认识你！"
 }
 ```
 
-- `reply`: Final assistant reply string (may be derived from structured JSON
-  `{ reply, events }` when the model follows the contract).
-- `events`: Optional follow-up memory payload, same structure as
-  `ChatEventPayload` used in `/message`.
+- `reply`: Final assistant reply string.
 
 ##### `error` Event
 
@@ -391,12 +416,8 @@ The client should treat this as a terminal failure for the stream.
     - The final assistant reply (role `assistant`) with token counts when
       available.
 
-- **Structured JSON output:**
-  - If the model returns a JSON object like `{ "reply": "...", "events": [...] }`
-    as the final text, the backend will parse it and expose:
-    - `reply`: from the JSON.
-    - `events`: from the JSON.
-  - If parsing fails, the raw text is used as `reply` and `events` defaults to `[]`.
+- **Plain text output:**
+  - The model returns plain text which becomes the `reply` field directly.
 
 ### Example Streaming Request (curl)
 
@@ -454,6 +475,7 @@ Returns chat messages in chronological order (oldest first). Supports cursor-bas
 | `content` | string | Message content. |
 | `created_at` | string (ISO datetime) | When the message was created. |
 | `tool_calls` | array \| null | Tool calls made during this message (if any). |
+| `attachments` | array of string \| null | Image URLs attached to this message (if any). |
 
 ### Example Request
 
@@ -609,50 +631,3 @@ User can respond or scroll to see history
 | --- | --- |
 | `404 Not Found` | User not found. |
 | `500 Internal Server Error` | AI generation or database failure. |
-
-
-
-## Appendix. Permission Request Flow Example
-┌─────────────────────────────────────────────────────────────────┐
-│                    PERMISSION REQUEST FLOW                       │
-└─────────────────────────────────────────────────────────────────┘
-
-User: "帮我设个明早7点的闹钟"
-                    │
-                    ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Backend returns:                                                 │
-│ {                                                                │
-│   "reply": "好的，我来帮你设置明早7点的闹钟",                    │
-│   "pending_client_actions": [{                                   │
-│     "tool": "alarm_manager",                                     │
-│     "action": "create_alarm",                                    │
-│     "params": {"time": "07:00"}                                  │
-│   }]                                                             │
-│ }                                                                │
-└─────────────────────────────────────────────────────────────────┘
-                    │
-                    ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ iOS Client checks permission status:                             │
-│                                                                  │
-│ if permission_not_granted:                                       │
-│   - Show system permission dialog                                │
-│   - If denied: show explanation + settings link                  │
-│ else:                                                            │
-│   - Execute the action                                           │
-│   - Report result back to chat (optional)                        │
-└─────────────────────────────────────────────────────────────────┘
-### Permission Groups:
-Tool| iOS Permission	| When to Request
-calendar_manager | EventKit (Calendar) | First calendar action
-alarm_manager | None (uses Clock app URL scheme) | N/A
-health_data | HealthKit | First health query
-screen_time | Screen Time API | First screen time query
-
-### Best Practices:
-
-- Don't request all permissions upfront - Users are more likely to grant when they understand why
-- Show context before requesting - "为了帮你查看日程，需要访问你的日历"
-- Handle denial gracefully - AI can respond: "没关系，你也可以手动查看日历"
-- Cache permission status - Don't repeatedly ask if already denied

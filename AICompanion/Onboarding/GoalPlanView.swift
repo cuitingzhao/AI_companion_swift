@@ -46,7 +46,7 @@ public struct GoalPlanView: View {
         .overlay(
             AppDialog(
                 isPresented: $isIntroDialogPresented,
-                message: "这是你的专属计划，它将随着对你的了解而动态优化。请关注每日待办列表哦！",
+                message: "这是你的专属计划，它将随着我对你的了解而动态优化。请关注每日待办列表哦！",
                 primaryTitle: "知道了",
                 primaryAction: {},
                 title: "目标计划说明"
@@ -57,7 +57,7 @@ public struct GoalPlanView: View {
     private func goalHeader(plan: GoalPlanResponse) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center) {
-                Text("目标")
+                Text("🎯目标")
                     .font(AppFonts.large)
                     .foregroundStyle(AppColors.textBlack)
 

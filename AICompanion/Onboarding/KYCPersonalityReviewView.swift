@@ -148,14 +148,14 @@ public struct KYCPersonalityReviewView: View {
 
     private func optionButton(title: String, value: OnboardingState.PersonalityAccuracy) -> some View {
         let isSelected = selectedRating == value
-        let background = AppColors.purple.opacity(isSelected ? 0.6 : 0.2)
+        let background = AppColors.purple.opacity(isSelected ? 0.8 : 0.2)
 
         return Button(action: {
             setRating(value)
         }) {
             Text(title)
                 .font(AppFonts.body)
-                .foregroundStyle(AppColors.purple)
+                .foregroundStyle(isSelected ? AppColors.white : AppColors.purple)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
                 .background(background)

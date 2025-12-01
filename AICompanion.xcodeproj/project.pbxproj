@@ -256,6 +256,7 @@
 				DEVELOPMENT_TEAM = VCBXL7D47G;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "每日点点";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "为了帮你管理日程，需要访问你的日历";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "为了帮你管理日程，需要访问你的日历";
 				INFOPLIST_KEY_NSHealthClinicalHealthRecordsShareUsageDescription = "为了帮你记录健康数据，需要写入你的健康信息";
@@ -294,6 +295,7 @@
 				DEVELOPMENT_TEAM = VCBXL7D47G;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "每日点点";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "为了帮你管理日程，需要访问你的日历";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "为了帮你管理日程，需要访问你的日历";
 				INFOPLIST_KEY_NSHealthClinicalHealthRecordsShareUsageDescription = "为了帮你记录健康数据，需要写入你的健康信息";

@@ -11,7 +11,9 @@ public final class OnboardingState: ObservableObject {
     }
 
     public enum Step: String {
-        case intro
+        case splash          // Initial loading state while checking auth
+        case intro           // Onboarding intro (with or without login option)
+        case login           // Login/Register page for guest users
         case nickname
         case profile
         case loading
@@ -31,7 +33,11 @@ public final class OnboardingState: ObservableObject {
         case male
     }
 
-    @Published public var currentStep: Step = .intro {
+    // Whether to show login option in OnboardingIntroView
+    // true = no token (new user), false = logged-in user who hasn't completed onboarding
+    @Published public var showLoginOption: Bool = true
+    
+    @Published public var currentStep: Step = .splash {
         didSet {
             persistCurrentStep()
         }
@@ -77,28 +83,65 @@ public final class OnboardingState: ObservableObject {
         var comps = DateComponents()
         comps.year = 1990; comps.month = 1; comps.day = 1; comps.hour = 0; comps.minute = 0
         self.birthDate = Calendar.current.date(from: comps) ?? Date(timeIntervalSince1970: 0)
-        restorePersistedOnboardingIfAvailable()
+        // Note: We no longer restore from UserDefaults here.
+        // The app entry point (AICompanionApp) will check AuthManager and route accordingly.
     }
-
-    private func restorePersistedOnboardingIfAvailable() {
-        let defaults = UserDefaults.standard
-        let savedUserId = defaults.integer(forKey: StorageKeys.userId)
-        guard savedUserId > 0 else { return }
-
-        submitUserId = savedUserId
-
-        if let savedNickname = defaults.string(forKey: StorageKeys.nickname), !savedNickname.isEmpty {
-            nickname = savedNickname
+    
+    /// Called by AICompanionApp after checking auth state
+    /// Routes user to the appropriate step based on their authentication status
+    @MainActor
+    public func initializeFromAuthState() async {
+        let authManager = AuthManager.shared
+        
+        // Check if we have a stored token
+        guard authManager.hasStoredToken else {
+            // No token: new user, show onboarding with login option
+            print("🔵 OnboardingState: No token found, showing intro with login option")
+            showLoginOption = true
+            currentStep = .intro
+            return
         }
-
-        // Prefer restoring the last explicit step if available
-        if let savedStepRaw = defaults.string(forKey: StorageKeys.step),
-           let savedStep = Step(rawValue: savedStepRaw) {
-            currentStep = savedStep
-        } else if defaults.bool(forKey: StorageKeys.completed) {
-            // Backwards compatibility: older版本只存了 completed，
-            // 对这类老数据，我们直接送用户回首页，而不是重新进入目标引导。
-            currentStep = .home
+        
+        // We have a token, fetch user info to determine routing
+        do {
+            try await authManager.fetchCurrentUser()
+            
+            guard let user = authManager.currentUser else {
+                // Failed to get user, clear tokens and start fresh
+                print("🔵 OnboardingState: Failed to get user info, clearing tokens")
+                authManager.clearTokens()
+                showLoginOption = true
+                currentStep = .intro
+                return
+            }
+            
+            // Route based on user state
+            if user.isGuest {
+                // Guest user: show login/register page
+                print("🔵 OnboardingState: Guest user, showing login page")
+                submitUserId = user.id
+                nickname = user.nickname
+                currentStep = .login
+            } else if !user.hasCompletedOnboarding {
+                // Logged-in user who hasn't completed onboarding
+                print("🔵 OnboardingState: Logged-in user, incomplete onboarding")
+                submitUserId = user.id
+                nickname = user.nickname
+                showLoginOption = false
+                currentStep = .intro
+            } else {
+                // Formal user with completed onboarding: go to home
+                print("🔵 OnboardingState: Formal user, going to home")
+                submitUserId = user.id
+                nickname = user.nickname
+                currentStep = .home
+            }
+        } catch {
+            // Token might be invalid, clear and start fresh
+            print("🔵 OnboardingState: Auth check failed - \(error), clearing tokens")
+            authManager.clearTokens()
+            showLoginOption = true
+            currentStep = .intro
         }
     }
 
@@ -168,6 +211,18 @@ public final class OnboardingState: ObservableObject {
             
             lastSubmitResponse = response
             submitUserId = response.userId
+
+            // Save tokens from response (guest user now has authentication)
+            if let accessToken = response.accessToken,
+               let refreshToken = response.refreshToken,
+               let expiresIn = response.expiresIn {
+                await AuthManager.shared.saveTokens(
+                    accessToken: accessToken,
+                    refreshToken: refreshToken,
+                    expiresIn: expiresIn
+                )
+                print("✅ Tokens saved after onboarding submit")
+            }
 
             persistOnboardingUser()
 

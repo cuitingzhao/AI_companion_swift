@@ -2,13 +2,22 @@ import SwiftUI
 
 public struct OnboardingIntroView: View {
     @ObservedObject private var state: OnboardingState
+    private let showLoginOption: Bool
     private let onStart: () -> Void
+    private let onLogin: (() -> Void)?
     @State private var isShowingPrivacyPolicy = false
     @State private var isShowingUserAgreement = false
 
-    public init(state: OnboardingState, onStart: @escaping () -> Void = {}) {
+    public init(
+        state: OnboardingState,
+        showLoginOption: Bool = true,
+        onStart: @escaping () -> Void = {},
+        onLogin: (() -> Void)? = nil
+    ) {
         self.state = state
+        self.showLoginOption = showLoginOption
         self.onStart = onStart
+        self.onLogin = onLogin
     }
     
     private var canProceed: Bool {
@@ -101,6 +110,18 @@ public struct OnboardingIntroView: View {
                         .buttonStyle(.plain)
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
+                    
+                    // Login option (only shown for new users without token)
+                    if showLoginOption, let login = onLogin {
+                        Button(action: login) {
+                            Text("已有账号？登录")
+                                .font(AppFonts.small)
+                                .foregroundStyle(AppColors.primary)
+                                .underline()
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 8)
+                    }
                 }
             }
         }
@@ -118,6 +139,20 @@ public struct OnboardingIntroView: View {
 
 }
 
-#Preview {
-    OnboardingIntroView(state: OnboardingState(), onStart: {})
+#Preview("With Login Option") {
+    OnboardingIntroView(
+        state: OnboardingState(),
+        showLoginOption: true,
+        onStart: {},
+        onLogin: {}
+    )
+}
+
+#Preview("Without Login Option") {
+    OnboardingIntroView(
+        state: OnboardingState(),
+        showLoginOption: false,
+        onStart: {},
+        onLogin: nil
+    )
 }

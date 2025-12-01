@@ -25,6 +25,11 @@ Submit onboarding details and trigger the full astrology/personality workflow.
 | `user_id` | integer | Newly created user id. |
 | `bazi_analysis` | [`BaziAnalysisResult`](../app/schemas/onboarding.py) | Body strength, useful gods, etc. |
 | `personality_traits` | array of [`PersonalityTrait`](../app/schemas/onboarding.py) | Trait text plus stable `id` values (0-indexed) for later feedback. |
+| `access_token` | string | JWT access token for API authentication. |
+| `refresh_token` | string | Refresh token for obtaining new access tokens. |
+| `expires_in` | integer | Access token expiry in seconds (default 900). |
+
+**Note:** The user created via this endpoint is a **guest user** (`is_guest=true`). To convert to a registered user, the client should call `/api/v1/auth/sms/verify` with the access token to bind a phone number.
 
 ### Errors
 - `400 Bad Request` – invalid `city_id`, missing fields, etc.

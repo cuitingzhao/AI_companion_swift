@@ -328,13 +328,13 @@ public struct HomeDailyTasksView: View {
         
         hasRequestedNotificationPermission = true
         
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
-            if let error = error {
-                print("❌ Notification permission error:", error)
-            } else {
-                print("✅ Notification permission granted:", granted)
-            }
+        // Set user ID on PushNotificationManager for token registration
+        if let userId = userId {
+            PushNotificationManager.shared.setUserId(userId)
         }
+        
+        // Request permission and register for remote notifications
+        PushNotificationManager.shared.requestPermissionAndRegister()
     }
 }
 

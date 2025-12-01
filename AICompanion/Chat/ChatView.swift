@@ -34,20 +34,17 @@ public struct ChatView: View {
             
             ZStack(alignment: .top) {
                 // Finch-inspired: Warm cream to light sage gradient
-                LinearGradient(
-                    colors: [AppColors.bgCream, AppColors.bgSageLight],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
-                
+                // LinearGradient(
+                //     colors: [AppColors.bgCream, AppColors.bgSageLight],
+                //     startPoint: .top,
+                //     endPoint: .bottom
+                // )
+                // .ignoresSafeArea()                
+                AppColors.accentYellow
+                    .ignoresSafeArea()
+
                 VStack(spacing: 0) {
                     ChatHeader()
-                    
-                    // Mascot GIF above chat body
-                    GIFImage(name: "winking")
-                        .frame(width: 180, height: 100)
-                        .frame(maxWidth: .infinity)
                     
                     // Finch-inspired: Clean content area
                     ZStack(alignment: .top) {
@@ -162,8 +159,8 @@ public struct ChatView: View {
                                     onClearImages: { viewModel.clearImages() }
                                 )
                             }
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 20)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 14)
                         }
                     }
                     .frame(maxHeight: .infinity)
