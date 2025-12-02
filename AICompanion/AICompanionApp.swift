@@ -121,6 +121,19 @@ struct AICompanionApp: App {
                     GoalOnboardingChatView(state: onboardingState)
                 case .goalPlan:
                     GoalPlanView(state: onboardingState)
+                case .subscription:
+                    // Paywall for expired trial/subscription
+                    SubscriptionView(
+                        onSubscribed: {
+                            print("🟣 Subscription successful, going to home")
+                            onboardingState.currentStep = .home
+                        },
+                        onClose: SubscriptionManager.shared.hasAccess ? {
+                            // Only allow close if user still has access (e.g., trial)
+                            print("🟣 Closing subscription view, going to home")
+                            onboardingState.currentStep = .home
+                        } : nil
+                    )
                 case .home:
                     HomeDailyTasksView(
                         userId: onboardingState.submitUserId
@@ -128,6 +141,10 @@ struct AICompanionApp: App {
                 }
             }
             .animation(.spring(response: 0.7, dampingFraction: 0.85), value: onboardingState.currentStep)
+            .onAppear {
+                // 锁定垂直方向
+                UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
+            }
         }
     }
 }

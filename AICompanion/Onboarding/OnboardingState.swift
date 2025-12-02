@@ -25,6 +25,7 @@ public final class OnboardingState: ObservableObject {
         case kycEnd
         case goalChat
         case goalPlan
+        case subscription    // Paywall for expired trial/subscription
         case home
     }
 
@@ -130,11 +131,20 @@ public final class OnboardingState: ObservableObject {
                 showLoginOption = false
                 currentStep = .intro
             } else {
-                // Formal user with completed onboarding: go to home
-                print("🔵 OnboardingState: Formal user, going to home")
+                // Formal user with completed onboarding: check subscription
+                print("🔵 OnboardingState: Formal user, checking subscription")
                 submitUserId = user.id
                 nickname = user.nickname
-                currentStep = .home
+                
+                // Check subscription status
+                await SubscriptionManager.shared.initialize()
+                if SubscriptionManager.shared.hasAccess {
+                    print("🔵 OnboardingState: Has subscription access, going to home")
+                    currentStep = .home
+                } else {
+                    print("🔵 OnboardingState: No subscription access, showing paywall")
+                    currentStep = .subscription
+                }
             }
         } catch {
             // Token might be invalid, clear and start fresh
