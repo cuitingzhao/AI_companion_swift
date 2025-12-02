@@ -10,7 +10,7 @@ public struct AppSubscriptionStatus: Codable {
     public let trialEndsAt: String?
     public let subscriptionEndsAt: String?
     public let daysRemaining: Int?
-    public let autoRenewEnabled: Bool
+    public let autoRenewEnabled: Bool?
     
     enum CodingKeys: String, CodingKey {
         case hasAccess = "has_access"

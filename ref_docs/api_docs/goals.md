@@ -2,8 +2,17 @@
 
 Source file: [`app/api/v1/endpoints/goals.py`](../app/api/v1/endpoints/goals.py)
 
+> ⚠️ **认证要求**: 本模块所有接口都需要Bearer Token认证。请在请求头中添加：
+> ```
+> Authorization: Bearer <access_token>
+> ```
+
+---
+
 ## 1. POST `/api/v1/goals/onboarding/message`
 Send a user message to the goal-setting onboarding agent and receive the agent's reply plus stage information.
+
+**🔒 需要认证**
 
 ### Description
 - Orchestrates a **multi-stage goal-setting workflow**:
@@ -17,8 +26,9 @@ Send a user message to the goal-setting onboarding agent and receive the agent's
 ### Request Body — [`GoalOnboardingMessageRequest`](../app/schemas/goal.py)
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
-| `user_id` | integer | Yes | Existing user id created during onboarding. |
 | `message` | string (1–2000 chars) | Yes | Raw user input from the goal onboarding chat. |
+
+> 注意：`user_id` 从认证Token中自动获取，无需在请求体中传递。
 
 ### Response — [`GoalOnboardingMessageResponse`](../app/schemas/goal.py)
 | Field | Type | Description |

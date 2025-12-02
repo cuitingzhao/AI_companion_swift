@@ -16,6 +16,7 @@ AICompanion/
 |   |   |-- FortuneModels.swift (daily fortune response models)
 |   |   |-- ChatModels.swift (chat API request/response models)
 |   |   |-- AuthModels.swift (authentication request/response models)
+|   |   |-- SubscriptionModels.swift (subscription status, verify receipt, restore models)
 |   |-- DesignSystem/
 |   |   |-- Colors.swift (Neobrutalism color palette)
 |   |   |-- Fonts.swift (Bold typography for Neobrutalism)
@@ -34,21 +35,23 @@ AICompanion/
 |   |       |-- CachedAsyncImage.swift (cached async image loader to prevent cancellation in LazyVStack)
 |   |
 |   |-- Networking/
-|   |   |-- APIClient.swift (shared API client with auth header injection)
-|   |   |-- AuthAPI.swift (authentication endpoints: SMS, verify, refresh, me)
-|   |   |-- CitiesAPI.swift
-|   |   |-- OnboardingAPI.swift
-|   |   |-- ProfileAPI.swift
-|   |   |-- GoalsAPI.swift
-|   |   |-- CalendarAPI.swift (GET /api/v1/utils/calendar/today)
-|   |   |-- FortuneAPI.swift (GET /api/v1/fortune/daily)
-|   |   |-- ExecutionsAPI.swift (PATCH /api/v1/executions/{execution_id})
-|   |   |-- ChatAPI.swift (POST /api/v1/chat/message)
-|   |   |-- MediaAPI.swift (POST /api/v1/media/upload/image for image uploads)
-|   |   |-- NotificationsAPI.swift (POST /api/v1/notifications/device-token for push notifications)
+|   |   |-- APIClient.swift (centralized API client: base URL, auth headers, 401 retry, error handling)
+|   |   |-- AuthAPI.swift (auth endpoints - no auth: sms/send, sms/verify, refresh, logout; auth: /me)
+|   |   |-- CitiesAPI.swift (no auth required - public utility)
+|   |   |-- OnboardingAPI.swift (mixed: submit=no auth, feedback/message/skip/status=auth)
+|   |   |-- ProfileAPI.swift (auth required)
+|   |   |-- GoalsAPI.swift (auth required)
+|   |   |-- CalendarAPI.swift (no auth required - utility)
+|   |   |-- FortuneAPI.swift (auth required)
+|   |   |-- ExecutionsAPI.swift (auth required)
+|   |   |-- ChatAPI.swift (auth required, includes SSE streaming)
+|   |   |-- MediaAPI.swift (auth required)
+|   |   |-- NotificationsAPI.swift (auth required)
+|   |   |-- SubscriptionAPI.swift (auth required)
 |   |
 |   |-- Services/
 |   |   |-- AuthManager.swift (Keychain token storage, auth state management)
+|   |   |-- SubscriptionManager.swift (StoreKit 2 integration, subscription state, IAP purchases)
 |   |   |-- LocationService.swift
 |   |   |-- PermissionManager.swift (JIT permission requests for iOS native tools)
 |   |   |-- NativeToolExecutor.swift (executes calendar, alarm, health, screen time actions)
@@ -74,6 +77,9 @@ AICompanion/
 |   |       |-- GenderChip.swift
 |   |       |-- CitySearchField.swift
 |   |       |-- ChatBubbleLoadingIndicator.swift
+|   |
+|   |-- Subscription/
+|   |   |-- SubscriptionView.swift (paywall UI with monthly/yearly plans, restore purchase)
 |   |
 |   |-- Resources/
 |       |-- ... (shared images/assets, etc.)

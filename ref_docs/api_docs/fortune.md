@@ -2,8 +2,17 @@
 
 Source file: [`app/api/v1/endpoints/fortune.py`](../app/api/v1/endpoints/fortune.py)
 
+> ⚠️ **认证要求**: 本模块所有接口都需要Bearer Token认证。请在请求头中添加：
+> ```
+> Authorization: Bearer <access_token>
+> ```
+
+---
+
 ## 1. GET `/api/v1/fortune/daily`
-Get today's Bazi-based daily fortune for a user.
+Get today's Bazi-based daily fortune for current user.
+
+**🔒 需要认证**
 
 ### Description
 - Uses the user's stored Bazi chart and the current date/time to compute a daily fortune.
@@ -13,8 +22,9 @@ Get today's Bazi-based daily fortune for a user.
 ### Query Parameters
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `user_id` | integer | Yes | Existing user id from onboarding. |
 | `tz` | string | No | Optional timezone identifier (e.g. `"Asia/Shanghai"`). If omitted, the backend default timezone is used. |
+
+> 注意：`user_id` 从认证Token中自动获取，无需在请求参数中传递。
 
 ### Response — [`DailyFortuneResponse`](../app/schemas/fortune.py)
 | Field | Type | Description |

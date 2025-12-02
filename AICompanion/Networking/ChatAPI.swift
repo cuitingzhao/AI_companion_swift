@@ -1,11 +1,5 @@
 import Foundation
 
-public enum ChatAPIError: Error {
-    case invalidURL
-    case badResponse
-    case decodingError
-}
-
 public enum ChatStreamEvent {
     case token(String)
     case done(String, [ChatEventPayload])
@@ -25,14 +19,13 @@ private struct ChatStreamErrorResponse: Decodable {
     let error: String
 }
 
+/// Chat API - All endpoints require authentication
 @MainActor
 public final class ChatAPI {
     public static let shared = ChatAPI()
-    public let baseURL: URL
+    private let client = APIClient.shared
 
-    public init(baseURL: URL = URL(string: "http://localhost:8000")!) {
-        self.baseURL = baseURL
-    }
+    private init() {}
 
     /// POST /api/v1/chat/message/stream
     /// Stream the AI companion reply token-by-token using Server-Sent Events (SSE).
@@ -41,29 +34,19 @@ public final class ChatAPI {
         AsyncThrowingStream { continuation in
             let task = Task {
                 do {
-                    var components = URLComponents()
-                    components.scheme = baseURL.scheme
-                    components.host = baseURL.host
-                    components.port = baseURL.port
-                    components.path = "/api/v1/chat/message/stream"
-
-                    guard let url = components.url else {
-                        continuation.finish(throwing: ChatAPIError.invalidURL)
-                        return
-                    }
-
-                    var urlRequest = URLRequest(url: url)
-                    urlRequest.httpMethod = "POST"
-                    urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                    // Build request with auth header
+                    var urlRequest = await client.makeRequest(
+                        path: "/api/v1/chat/message/stream",
+                        method: "POST",
+                        body: try JSONEncoder().encode(request),
+                        requiresAuth: true
+                    )
                     urlRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
-
-                    let encoder = JSONEncoder()
-                    urlRequest.httpBody = try encoder.encode(request)
 
                     let (bytes, response) = try await URLSession.shared.bytes(for: urlRequest)
 
                     guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-                        continuation.finish(throwing: ChatAPIError.badResponse)
+                        continuation.finish(throwing: APIError.invalidResponse)
                         return
                     }
 
@@ -88,7 +71,7 @@ public final class ChatAPI {
                             // Try as Error
                             if let errorResponse = try? JSONDecoder().decode(ChatStreamErrorResponse.self, from: data) {
                                 continuation.yield(.error(errorResponse.error))
-                                continuation.finish(throwing: ChatAPIError.badResponse)
+                                continuation.finish(throwing: APIError.invalidResponse)
                                 return
                             }
                         }
@@ -108,112 +91,35 @@ public final class ChatAPI {
     /// POST /api/v1/chat/message
     /// Process a user message in the main companion chat with optional tool calling support.
     public func sendMessage(_ request: ChatMessageRequest, enableTools: Bool = true) async throws -> ChatMessageResponse {
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/chat/message"
-        components.queryItems = [
-            URLQueryItem(name: "enable_tools", value: enableTools ? "true" : "false")
-        ]
-
-        guard let url = components.url else {
-            throw ChatAPIError.invalidURL
-        }
-
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let encoder = JSONEncoder()
-        urlRequest.httpBody = try encoder.encode(request)
-
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw ChatAPIError.badResponse
-        }
-
-        // Debug: Print raw response
-        if let rawString = String(data: data, encoding: .utf8) {
-            print("🔵 ChatAPI raw response: \(rawString)")
-        }
-
-        let decoder = JSONDecoder()
-        return try decoder.decode(ChatMessageResponse.self, from: data)
+        let path = "/api/v1/chat/message?enable_tools=\(enableTools ? "true" : "false")"
+        return try await client.post(path: path, body: request)
     }
 
-    /// GET /api/v1/chat/history/{user_id}
-    /// Get paginated chat history for a user.
-    /// - Parameters:
-    ///   - userId: User ID
-    ///   - limit: Maximum messages to return (1-200), default 50
-    ///   - beforeId: Return messages before this message ID (for pagination)
-    public func fetchChatHistory(userId: Int, limit: Int = 50, beforeId: Int? = nil) async throws -> ChatHistoryResponse {
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/chat/history/\(userId)"
-
-        var queryItems: [URLQueryItem] = [
-            URLQueryItem(name: "limit", value: String(limit))
-        ]
+    /// GET /api/v1/chat/history
+    /// Get paginated chat history for the current user.
+    public func fetchChatHistory(limit: Int = 50, beforeId: Int? = nil) async throws -> ChatHistoryResponse {
+        var path = "/api/v1/chat/history?limit=\(limit)"
         if let beforeId = beforeId {
-            queryItems.append(URLQueryItem(name: "before_id", value: String(beforeId)))
+            path += "&before_id=\(beforeId)"
         }
-        components.queryItems = queryItems
-
-        guard let url = components.url else {
-            throw ChatAPIError.invalidURL
-        }
-
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "GET"
-
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw ChatAPIError.badResponse
-        }
-
-        // Debug: Print raw response
-        if let rawString = String(data: data, encoding: .utf8) {
-            print("🔵 ChatAPI history raw response: \(rawString.prefix(500))...")
-        }
-
-        let decoder = JSONDecoder()
-        return try decoder.decode(ChatHistoryResponse.self, from: data)
+        return try await client.get(path: path)
     }
 
-    /// GET /api/v1/chat/greeting/{user_id}
+    /// GET /api/v1/chat/greeting
     /// Generate a personalized AI greeting when user opens the chat.
+    public func fetchGreeting() async throws -> ChatGreetingResponse {
+        return try await client.get(path: "/api/v1/chat/greeting")
+    }
+    
+    // MARK: - Deprecated
+    
+    @available(*, deprecated, message: "Use fetchChatHistory(limit:beforeId:) - userId derived from token")
+    public func fetchChatHistory(userId: Int, limit: Int = 50, beforeId: Int? = nil) async throws -> ChatHistoryResponse {
+        return try await fetchChatHistory(limit: limit, beforeId: beforeId)
+    }
+    
+    @available(*, deprecated, message: "Use fetchGreeting() - userId derived from token")
     public func fetchGreeting(userId: Int) async throws -> ChatGreetingResponse {
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/chat/greeting/\(userId)"
-
-        guard let url = components.url else {
-            throw ChatAPIError.invalidURL
-        }
-
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "GET"
-
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw ChatAPIError.badResponse
-        }
-
-        // Debug: Print raw response
-        if let rawString = String(data: data, encoding: .utf8) {
-            print("🔵 ChatAPI greeting raw response: \(rawString)")
-        }
-
-        let decoder = JSONDecoder()
-        return try decoder.decode(ChatGreetingResponse.self, from: data)
+        return try await fetchGreeting()
     }
 }

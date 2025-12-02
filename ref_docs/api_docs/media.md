@@ -2,6 +2,11 @@
 
 Source file: [`app/api/v1/endpoints/media.py`](../app/api/v1/endpoints/media.py)
 
+> ⚠️ **认证要求**: 本模块所有接口都需要Bearer Token认证。请在请求头中添加：
+> ```
+> Authorization: Bearer <access_token>
+> ```
+
 ## Overview
 
 The Media API provides endpoints for uploading images to cloud storage (Alibaba Cloud OSS). Use these endpoints to upload images before sending them in chat messages.
@@ -12,12 +17,15 @@ The Media API provides endpoints for uploading images to cloud storage (Alibaba 
 
 Upload a single base64-encoded image to cloud storage.
 
+**🔒 需要认证**
+
 ### Request Body — `ImageUploadRequest`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `user_id` | integer | Yes | User ID (must be > 0) |
 | `image_data` | string | Yes | Base64-encoded image data. Can include data URI prefix (e.g., `data:image/png;base64,...`) or just the base64 string. |
+
+> 注意：`user_id` 从认证Token中自动获取，无需在请求体中传递。
 
 ### Response — `ImageUploadResponse`
 
@@ -31,8 +39,8 @@ Upload a single base64-encoded image to cloud storage.
 ```bash
 curl -X POST "http://localhost:8000/api/v1/media/upload/image" \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <access_token>" \
   -d '{
-    "user_id": 1,
     "image_data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
   }'
 ```
@@ -60,12 +68,15 @@ curl -X POST "http://localhost:8000/api/v1/media/upload/image" \
 
 Upload multiple base64-encoded images to cloud storage.
 
+**🔒 需要认证**
+
 ### Request Body — `MultiImageUploadRequest`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `user_id` | integer | Yes | User ID (must be > 0) |
 | `images` | array of string | Yes | List of base64-encoded images (max 4) |
+
+> 注意：`user_id` 从认证Token中自动获取，无需在请求体中传递。
 
 ### Response — `MultiImageUploadResponse`
 

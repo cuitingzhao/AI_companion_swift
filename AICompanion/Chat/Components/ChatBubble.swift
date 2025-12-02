@@ -73,9 +73,7 @@ struct ChatBubble: View {
             
             // Display text if not empty
             if !text.isEmpty {
-                Text(text)
-                    .font(AppFonts.body)
-                    .foregroundStyle(isUser ? .white : AppColors.neoBlack)
+                markdownText(text, isUser: isUser)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
                     .background(isUser ? AppColors.neoPurple : .white)
@@ -91,6 +89,21 @@ struct ChatBubble: View {
                         y: 3
                     )
             }
+        }
+    }
+    
+    /// Renders text with basic markdown support (bold, italic)
+    @ViewBuilder
+    private func markdownText(_ text: String, isUser: Bool) -> some View {
+        if let attributedString = try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
+            Text(attributedString)
+                .font(AppFonts.body)
+                .foregroundStyle(isUser ? .white : AppColors.neoBlack)
+        } else {
+            // Fallback to plain text if markdown parsing fails
+            Text(text)
+                .font(AppFonts.body)
+                .foregroundStyle(isUser ? .white : AppColors.neoBlack)
         }
     }
 }

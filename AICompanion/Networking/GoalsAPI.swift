@@ -1,283 +1,81 @@
 import Foundation
 
+/// Goals API - All endpoints require authentication
 @MainActor
 public final class GoalsAPI {
     public static let shared = GoalsAPI()
-    public let baseURL: URL
-
-    public init(baseURL: URL = URL(string: "http://localhost:8000")!) {
-        self.baseURL = baseURL
-    }
-
+    private let client = APIClient.shared
+    
+    private init() {}
+    
+    // MARK: - Goal Onboarding
+    
     public func sendOnboardingMessage(_ request: GoalOnboardingMessageRequest) async throws -> GoalOnboardingMessageResponse {
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/goals/onboarding/message"
-
-        guard let url = components.url else {
-            throw OnboardingAPIError.invalidURL
-        }
-
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let encoder = JSONEncoder()
-        urlRequest.httpBody = try encoder.encode(request)
-
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw OnboardingAPIError.badResponse
-        }
-
-        let decoder = JSONDecoder()
-        return try decoder.decode(GoalOnboardingMessageResponse.self, from: data)
+        try await client.post(path: "/api/v1/goals/onboarding/message", body: request)
     }
-
+    
     public func skipOnboarding(_ request: GoalOnboardingSkipRequest) async throws -> GoalOnboardingSkipResponse {
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/goals/onboarding/skip"
-
-        guard let url = components.url else {
-            throw OnboardingAPIError.invalidURL
-        }
-
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let encoder = JSONEncoder()
-        urlRequest.httpBody = try encoder.encode(request)
-
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw OnboardingAPIError.badResponse
-        }
-
-        let decoder = JSONDecoder()
-        return try decoder.decode(GoalOnboardingSkipResponse.self, from: data)
+        try await client.post(path: "/api/v1/goals/onboarding/skip", body: request)
     }
-
-    public func fetchOnboardingStatus(userId: Int) async throws -> GoalOnboardingStatusResponse {
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/goals/onboarding/status/\(userId)"
-
-        guard let url = components.url else {
-            throw OnboardingAPIError.invalidURL
-        }
-
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "GET"
-
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw OnboardingAPIError.badResponse
-        }
-
-        let decoder = JSONDecoder()
-        return try decoder.decode(GoalOnboardingStatusResponse.self, from: data)
+    
+    /// GET /api/v1/goals/onboarding/status
+    public func fetchOnboardingStatus() async throws -> GoalOnboardingStatusResponse {
+        return try await client.get(path: "/api/v1/goals/onboarding/status")
     }
-
+    
+    // MARK: - Goal Plans
+    
+    /// GET /api/v1/goals/{goal_id}/plan
     public func fetchGoalPlan(goalId: Int) async throws -> GoalPlanResponse {
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/goals/\(goalId)/plan"
-
-        guard let url = components.url else {
-            throw OnboardingAPIError.invalidURL
-        }
-
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "GET"
-
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw OnboardingAPIError.badResponse
-        }
-
-        let decoder = JSONDecoder()
-        return try decoder.decode(GoalPlanResponse.self, from: data)
+        return try await client.get(path: "/api/v1/goals/\(goalId)/plan")
     }
-
+    
+    /// GET /api/v1/goals/plans
+    public func fetchAllGoalsPlans() async throws -> UserGoalsPlansResponse {
+        return try await client.get(path: "/api/v1/goals/plans")
+    }
+    
+    /// GET /api/v1/users/today-plan
+    public func fetchTodayPlan() async throws -> DailyTaskPlanResponse {
+        return try await client.get(path: "/api/v1/users/today-plan")
+    }
+    
+    // MARK: - Deprecated
+    
+    @available(*, deprecated, message: "Use fetchOnboardingStatus() - userId derived from token")
+    public func fetchOnboardingStatus(userId: Int) async throws -> GoalOnboardingStatusResponse {
+        return try await fetchOnboardingStatus()
+    }
+    
+    @available(*, deprecated, message: "Use fetchAllGoalsPlans() - userId derived from token")
     public func fetchUserGoalsPlans(userId: Int) async throws -> UserGoalsPlansResponse {
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/goals/user/\(userId)/plans"
-
-        guard let url = components.url else {
-            throw OnboardingAPIError.invalidURL
-        }
-
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "GET"
-
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw OnboardingAPIError.badResponse
-        }
-
-        let decoder = JSONDecoder()
-        return try decoder.decode(UserGoalsPlansResponse.self, from: data)
+        return try await fetchAllGoalsPlans()
     }
-
+    
+    @available(*, deprecated, message: "Use fetchTodayPlan() - userId derived from token")
     public func fetchTodayPlan(userId: Int) async throws -> DailyTaskPlanResponse {
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/users/\(userId)/today-plan"
-
-        guard let url = components.url else {
-            throw OnboardingAPIError.invalidURL
-        }
-
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "GET"
-
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw OnboardingAPIError.badResponse
-        }
-
-        let decoder = JSONDecoder()
-        return try decoder.decode(DailyTaskPlanResponse.self, from: data)
+        return try await fetchTodayPlan()
     }
     
     // MARK: - Update Goal
     
     public func updateGoal(goalId: Int, request: GoalUpdateRequest) async throws -> GoalUpdateResponse {
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/goals/\(goalId)"
-        
-        guard let url = components.url else {
-            throw OnboardingAPIError.invalidURL
-        }
-        
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "PATCH"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let encoder = JSONEncoder()
-        urlRequest.httpBody = try encoder.encode(request)
-        
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-        
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw OnboardingAPIError.badResponse
-        }
-        
-        let decoder = JSONDecoder()
-        return try decoder.decode(GoalUpdateResponse.self, from: data)
+        return try await client.patch(path: "/api/v1/goals/\(goalId)", body: request)
     }
     
     // MARK: - Update Milestone
     
     public func updateMilestone(milestoneId: Int, request: MilestoneUpdateRequest) async throws -> MilestoneUpdateResponse {
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/goals/milestones/\(milestoneId)/fields"
-        
-        guard let url = components.url else {
-            throw OnboardingAPIError.invalidURL
-        }
-        
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "PATCH"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let encoder = JSONEncoder()
-        urlRequest.httpBody = try encoder.encode(request)
-        
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-        
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw OnboardingAPIError.badResponse
-        }
-        
-        let decoder = JSONDecoder()
-        return try decoder.decode(MilestoneUpdateResponse.self, from: data)
+        return try await client.patch(path: "/api/v1/goals/milestones/\(milestoneId)/fields", body: request)
     }
     
-    // MARK: - Milestone Action (complete/expire/reopen)
-    
     public func performMilestoneAction(milestoneId: Int, request: MilestoneActionRequest) async throws -> MilestoneActionResponse {
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/goals/milestones/\(milestoneId)"
-        
-        guard let url = components.url else {
-            throw OnboardingAPIError.invalidURL
-        }
-        
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "PATCH"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let encoder = JSONEncoder()
-        urlRequest.httpBody = try encoder.encode(request)
-        
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-        
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw OnboardingAPIError.badResponse
-        }
-        
-        let decoder = JSONDecoder()
-        return try decoder.decode(MilestoneActionResponse.self, from: data)
+        return try await client.patch(path: "/api/v1/goals/milestones/\(milestoneId)", body: request)
     }
     
     // MARK: - Update Task
     
     public func updateTask(taskId: Int, request: TaskUpdateRequest) async throws -> TaskUpdateResponse {
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/goals/tasks/\(taskId)"
-        
-        guard let url = components.url else {
-            throw OnboardingAPIError.invalidURL
-        }
-        
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "PATCH"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let encoder = JSONEncoder()
-        urlRequest.httpBody = try encoder.encode(request)
-        
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-        
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw OnboardingAPIError.badResponse
-        }
-        
-        let decoder = JSONDecoder()
-        return try decoder.decode(TaskUpdateResponse.self, from: data)
+        return try await client.patch(path: "/api/v1/goals/tasks/\(taskId)", body: request)
     }
 }

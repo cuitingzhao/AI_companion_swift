@@ -2,6 +2,11 @@
 
 Push notification management for the AI Companion app.
 
+> ⚠️ **认证要求**: 本模块所有接口都需要Bearer Token认证。请在请求头中添加：
+> ```
+> Authorization: Bearer <access_token>
+> ```
+
 ## Overview
 
 The notification system supports:
@@ -18,12 +23,13 @@ The notification system supports:
 
 Register or update a device push token.
 
+**🔒 需要认证**
+
 **Endpoint:** `POST /api/v1/notifications/device-token`
 
 **Request Body:**
 ```json
 {
-  "user_id": 1,
   "device_id": "A1B2C3D4-E5F6-7890-ABCD-EF1234567890",
   "platform": "ios",
   "push_token": "abc123def456...",
@@ -33,6 +39,8 @@ Register or update a device push token.
   "device_model": "iPhone 15 Pro"
 }
 ```
+
+> 注意：`user_id` 从认证Token中自动获取，无需在请求体中传递。
 
 **Response:**
 ```json

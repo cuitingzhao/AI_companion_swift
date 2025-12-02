@@ -10,6 +10,92 @@
 
 ---
 
+## 认证方式
+
+大多数API端点需要Bearer Token认证。登录成功后，客户端会收到 `access_token`，需要在后续请求的Header中携带：
+
+```
+Authorization: Bearer <access_token>
+```
+
+### 需要认证的端点
+
+以下端点需要携带有效的Bearer Token：
+
+| 模块 | 端点 | 说明 |
+|------|------|------|
+| **Profile** | `POST /api/v1/profile/location` | 更新用户位置 |
+| **Profile** | `GET /api/v1/profile/location` | 获取用户位置 |
+| **User** | `GET /api/v1/users/today-plan` | 获取今日计划 |
+| **Goals** | `POST /api/v1/goals/onboarding/message` | 目标设定消息 |
+| **Goals** | `POST /api/v1/goals/onboarding/skip` | 跳过目标设定 |
+| **Goals** | `GET /api/v1/goals/onboarding/status` | 获取目标设定状态 |
+| **Goals** | `GET /api/v1/goals/plans` | 获取所有目标计划 |
+| **Goals** | `GET /api/v1/goals/{goal_id}/plan` | 获取单个目标计划 |
+| **Goals** | `PATCH /api/v1/goals/{goal_id}` | 更新目标 |
+| **Goals** | `PATCH /api/v1/goals/milestones/{milestone_id}` | 更新里程碑状态 |
+| **Goals** | `PATCH /api/v1/goals/milestones/{milestone_id}/fields` | 更新里程碑字段 |
+| **Goals** | `PATCH /api/v1/goals/tasks/{task_id}` | 更新任务 |
+| **Executions** | `PATCH /api/v1/executions/{execution_id}` | 更新执行状态 |
+| **Executions** | `GET /api/v1/executions/daily` | 获取每日计划 |
+| **Executions** | `GET /api/v1/executions/calendar/completion` | 获取日历完成情况 |
+| **Fortune** | `GET /api/v1/fortune/daily` | 获取每日运势 |
+| **Fortune** | `GET /api/v1/fortune/yearly` | 获取年度运势 |
+| **Chat** | `POST /api/v1/chat/message` | 发送聊天消息 |
+| **Chat** | `POST /api/v1/chat/message/stream` | 流式聊天消息 |
+| **Chat** | `GET /api/v1/chat/history` | 获取聊天历史 |
+| **Chat** | `GET /api/v1/chat/greeting` | 获取问候语 |
+| **Notifications** | `POST /api/v1/notifications/device-token` | 注册设备Token |
+| **Notifications** | `DELETE /api/v1/notifications/device-token` | 注销设备Token |
+| **Notifications** | `GET /api/v1/notifications/preferences` | 获取通知偏好 |
+| **Notifications** | `PUT /api/v1/notifications/preferences` | 更新通知偏好 |
+| **Notifications** | `GET /api/v1/notifications/list` | 获取通知列表 |
+| **Notifications** | `POST /api/v1/notifications/{notification_id}/read` | 标记通知已读 |
+| **Media** | `POST /api/v1/media/upload/image` | 上传单张图片 |
+| **Media** | `POST /api/v1/media/upload/images` | 上传多张图片 |
+| **Subscription** | `GET /api/v1/subscription/status` | 获取订阅状态 |
+| **Subscription** | `POST /api/v1/subscription/verify-receipt` | 验证购买收据 |
+| **Subscription** | `POST /api/v1/subscription/restore` | 恢复购买 |
+| **Onboarding** | `POST /api/v1/onboarding/feedback` | 提交性格反馈 |
+| **Onboarding** | `POST /api/v1/onboarding/message` | KYC消息处理 |
+| **Onboarding** | `POST /api/v1/onboarding/message/location` | KYC位置消息 |
+| **Onboarding** | `POST /api/v1/onboarding/skip` | 跳过KYC |
+| **Onboarding** | `GET /api/v1/onboarding/status` | 获取KYC状态 |
+
+### 不需要认证的端点
+
+以下端点不需要认证：
+
+| 模块 | 端点 | 说明 |
+|------|------|------|
+| **Auth** | `POST /api/v1/auth/sms/send` | 发送验证码 |
+| **Auth** | `POST /api/v1/auth/sms/verify` | 验证并登录 |
+| **Auth** | `POST /api/v1/auth/guest` | 游客登录 |
+| **Auth** | `POST /api/v1/auth/refresh` | 刷新Token |
+| **Cities** | `GET /api/v1/cities` | 获取城市列表 |
+| **Health** | `GET /api/v1/health` | 健康检查 |
+| **Onboarding** | `POST /api/v1/onboarding/submit` | 提交入门信息（创建用户） |
+
+### 认证错误响应
+
+**401 Unauthorized** - Token无效或过期
+
+```json
+{
+  "detail": "Invalid or expired token"
+}
+```
+
+**403 Forbidden** - 无权访问资源
+
+```json
+{
+  "detail": "Not authorized to access this resource"
+}
+```
+
+---
+
 ## 1. 发送短信验证码
 
 发送6位数字验证码到指定手机号。

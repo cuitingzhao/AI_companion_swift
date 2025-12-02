@@ -2,8 +2,17 @@
 
 Source file: [`app/api/v1/endpoints/profile.py`](../app/api/v1/endpoints/profile.py)
 
+> ⚠️ **认证要求**: 本模块所有接口都需要Bearer Token认证。请在请求头中添加：
+> ```
+> Authorization: Bearer <access_token>
+> ```
+
+---
+
 ## 1. POST `/api/v1/profile/location`
 Update the user's current city.
+
+**🔒 需要认证**
 
 ### Description
 - Invoked after the client obtains GPS permission or when the user manually edits their location.
@@ -13,10 +22,11 @@ Update the user's current city.
 ### Request Body — [`LocationUpdateRequest`](../app/schemas/profile.py)
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
-| `user_id` | integer | Yes | Existing user/profile identifier. |
 | `city` | string | Yes | Display name of the city (Chinese or English). |
 | `latitude` | float (-90~90) | No | Optional GPS latitude. |
 | `longitude` | float (-180~180) | No | Optional GPS longitude. |
+
+> 注意：`user_id` 从认证Token中自动获取，无需在请求体中传递。
 
 ### Response — [`LocationUpdateResponse`](../app/schemas/profile.py)
 ```json
@@ -38,13 +48,12 @@ Update the user's current city.
 
 ---
 
-## 2. GET `/api/v1/profile/location/{user_id}`
-Retrieve the stored current city and birthplace.
+## 2. GET `/api/v1/profile/location`
+Retrieve the stored current city and birthplace for current user.
 
-### Path Parameters
-| Name | Type | Description |
-| --- | --- | --- |
-| `user_id` | integer | Unique user identifier. |
+**🔒 需要认证**
+
+> 注意：`user_id` 从认证Token中自动获取，无需在路径参数中传递。
 
 ### Response
 ```json

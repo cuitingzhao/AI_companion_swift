@@ -2,9 +2,17 @@
 
 Source file: [`app/api/v1/endpoints/user.py`](../app/api/v1/endpoints/user.py)
 
+> ⚠️ **认证要求**: 本模块大部分接口需要Bearer Token认证。请在请求头中添加：
+> ```
+> Authorization: Bearer <access_token>
+> ```
 
-## 1. GET `/api/v1/users/{user_id}/today-plan`
-Get or generate today's task plan for a given user.
+---
+
+## 1. GET `/api/v1/users/today-plan`
+Get or generate today's task plan for current user.
+
+**🔒 需要认证**
 
 ### Description
 - Returns the **daily task executions** for the user on the current date.
@@ -16,10 +24,7 @@ Get or generate today's task plan for a given user.
     - Materialize them into `TaskExecution(status="planned")` rows for today.
 - Subsequent calls on the same day simply return the existing executions.
 
-### Path Parameters
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `user_id` | integer | Target user ID. |
+> 注意：`user_id` 从认证Token中自动获取，无需在路径参数中传递。
 
 ### Response — [`DailyTaskPlanResponse`](../app/schemas/goal.py)
 ```json

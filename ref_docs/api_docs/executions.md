@@ -2,8 +2,17 @@
 
 Source file: [`app/api/v1/endpoints/executions.py`](../app/api/v1/endpoints/executions.py)
 
+> ⚠️ **认证要求**: 本模块所有接口都需要Bearer Token认证。请在请求头中添加：
+> ```
+> Authorization: Bearer <access_token>
+> ```
+
+---
+
 ## 1. PATCH `/api/v1/executions/{execution_id}`
 Update a task execution status based on user action (complete / cancel / postpone).
+
+**🔒 需要认证**
 
 ### Description
 - Operates on a single `TaskExecution` row representing a daily assignment of a `Task`.
@@ -120,11 +129,14 @@ Get or generate the daily task plan for a user.
 - **Auto-expires overdue milestones** before generating/returning the plan.
 - Returns info about any milestones that were auto-expired, allowing client to prompt user for feedback.
 
+**🔒 需要认证**
+
 ### Query Parameters
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `user_id` | integer | Yes | User ID. |
 | `target_date` | string (`YYYY-MM-DD`) | No | Date for the plan. Defaults to today. |
+
+> 注意：`user_id` 从认证Token中自动获取，无需在请求参数中传递。
 
 ### Response — [`DailyTaskPlanResponse`](../app/schemas/goal.py)
 | Field | Type | Description |
@@ -208,12 +220,15 @@ Get task completion summary for a date range, designed for calendar widgets.
 - Useful for calendar widgets that show different colors based on completion status.
 - Only days with at least one planned task are included in the response.
 
+**🔒 需要认证**
+
 ### Query Parameters
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `user_id` | integer | Yes | User ID. |
 | `start_date` | string (`YYYY-MM-DD`) | No | Start of date range. Defaults to 30 days ago. |
 | `end_date` | string (`YYYY-MM-DD`) | No | End of date range. Defaults to today. |
+
+> 注意：`user_id` 从认证Token中自动获取，无需在请求参数中传递。
 
 ### Response — [`CalendarCompletionResponse`](../app/schemas/goal.py)
 | Field | Type | Description |
@@ -233,7 +248,7 @@ Get task completion summary for a date range, designed for calendar widgets.
 
 ### Example Request
 ```bash
-curl "http://localhost:8000/api/v1/executions/calendar/completion?user_id=1&start_date=2025-11-01&end_date=2025-11-30"
+curl -H "Authorization: Bearer <access_token>" "http://localhost:8000/api/v1/executions/calendar/completion?start_date=2025-11-01&end_date=2025-11-30"
 ```
 
 ### Example Response

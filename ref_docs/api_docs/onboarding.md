@@ -2,8 +2,17 @@
 
 Source file: [`app/api/v1/endpoints/onboarding.py`](../app/api/v1/endpoints/onboarding.py)
 
+> ⚠️ **认证要求**: 除 `/submit` 外，本模块其他接口都需要Bearer Token认证。请在请求头中添加：
+> ```
+> Authorization: Bearer <access_token>
+> ```
+
+---
+
 ## 1. POST `/api/v1/onboarding/submit`
 Submit onboarding details and trigger the full astrology/personality workflow.
+
+**🔓 无需认证** - 此接口创建新用户并返回Token
 
 ### Description
 - Validates input, enriches with location metadata, creates `User` + `Profile` records.
@@ -44,6 +53,8 @@ Submit onboarding details and trigger the full astrology/personality workflow.
 ## 2. POST `/api/v1/onboarding/feedback`
 Submit per-trait personality feedback after the user reviews each AI-generated trait.
 
+**🔒 需要认证**
+
 ### Description
 - Validates that the user has an active `PersonalityAnalysis` and trait ids remain in range.
 - Saves enriched feedback (trait id, original trait text, flag, optional comment) into `trait_feedbacks` JSON column.
@@ -52,8 +63,9 @@ Submit per-trait personality feedback after the user reviews each AI-generated t
 ### Request Body — [`OnboardingFeedbackRequest`](../app/schemas/onboarding.py)
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
-| `user_id` | integer | Yes | Returned from `/onboarding/submit`. |
 | `trait_feedbacks` | array of [`TraitFeedback`](../app/schemas/onboarding.py) | Yes | Provide feedback for each reviewed trait. |
+
+> 注意：`user_id` 从认证Token中自动获取，无需在请求体中传递。
 
 `TraitFeedback` structure:
 | Field | Type | Required | Description |
@@ -79,6 +91,8 @@ Submit per-trait personality feedback after the user reviews each AI-generated t
 ## 3. POST `/api/v1/onboarding/message`
 Conversational KYC step during onboarding.
 
+**🔒 需要认证**
+
 ### Description
 - Handles a single turn of the KYC conversation.
 - The AI asks follow-up questions, comments on the user’s answers, and tracks which KYC fields are completed.
@@ -87,15 +101,15 @@ Conversational KYC step during onboarding.
 ### Request Body — [`KYCMessageRequest`](../app/schemas/kyc.py)
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
-| `user_id` | integer | Yes | Existing user id from `/onboarding/submit`. |
-| `message` | string (1–1000 chars) | Yes | User’s current free-text reply in the KYC conversation. |
+| `message` | string (1–1000 chars) | Yes | User's current free-text reply in the KYC conversation. |
 | `history` | array of objects | No | Optional chat history maintained by the client, each item has `role` (`"user"` or `"assistant"`) and `content` (string). |
+
+> 注意：`user_id` 从认证Token中自动获取，无需在请求体中传递。
 
 Example:
 
 ```json
 {
-  "user_id": 1,
   "message": "我是学生",
   "history": [
     { "role": "assistant", "content": "嗨，Popo，我是你的AI陪伴助手Popo宝，方便先告诉我你现在所在的城市吗？" },
@@ -121,8 +135,10 @@ Example:
 **目前这个接口没有使用，因为如果相差太远的话可能会有误导性**
 Location-based KYC message to inform the AI of the user's current city using GPS coordinates.
 
+**🔒 需要认证**
+
 ### Description
-- Accepts `user_id` and device GPS coordinates (`latitude`, `longitude`).
+- Accepts device GPS coordinates (`latitude`, `longitude`).
 - Uses backend city data (`cities.json`) to find the nearest city.
 - Sends a synthesized first-person message like `"我所在的城市为喀什地区（新疆）。"` into the KYC conversation.
 - Returns the usual KYC conversation response so the client can display the AI's reply.
@@ -130,9 +146,10 @@ Location-based KYC message to inform the AI of the user's current city using GPS
 ### Request Body — [`KYCLocationMessageRequest`](../app/schemas/kyc.py)
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
-| `user_id` | integer | Yes | Existing user id from `/onboarding/submit`. |
 | `latitude` | float | Yes | GPS latitude from the client. |
 | `longitude` | float | Yes | GPS longitude from the client. |
+
+> 注意：`user_id` 从认证Token中自动获取，无需在请求体中传递。
 
 ### Response — [`KYCMessageResponse`](../app/schemas/kyc.py)
 Same structure as `/api/v1/onboarding/message`:
@@ -148,8 +165,8 @@ Same structure as `/api/v1/onboarding/message`:
 ```bash
 curl -X POST "http://localhost:8000/api/v1/onboarding/message/location" \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <access_token>" \
   -d '{
-    "user_id": 1,
     "latitude": 37.785834,
     "longitude": -122.406417
   }'
@@ -163,14 +180,13 @@ curl -X POST "http://localhost:8000/api/v1/onboarding/message/location" \
 ## 4. POST `/api/v1/onboarding/skip`
 Skip the KYC conversation during onboarding.
 
+**🔒 需要认证**
+
 ### Description
 - Marks KYC as skipped so the user can continue using the app without completing all KYC questions.
 - The missing information can be collected later in normal conversations.
 
-### Request Body — [`KYCSkipRequest`](../app/schemas/kyc.py)
-| Field | Type | Required | Notes |
-| --- | --- | --- | --- |
-| `user_id` | integer | Yes | Existing user id from `/onboarding/submit`. |
+> 注意：`user_id` 从认证Token中自动获取，无需在请求体中传递。
 
 ### Response — [`KYCSkipResponse`](../app/schemas/kyc.py)
 ```json
@@ -186,17 +202,16 @@ Skip the KYC conversation during onboarding.
 
 ---
 
-## 5. GET `/api/v1/onboarding/status/{user_id}`
-Check the KYC collection status for a given user.
+## 5. GET `/api/v1/onboarding/status`
+Check the KYC collection status for current user.
+
+**🔒 需要认证**
 
 ### Description
 - Returns which KYC fields have already been collected and which are still pending.
 - Allows the client to decide whether to continue the KYC conversation or show a “completed” state.
 
-### Path Parameters
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `user_id` | integer | Yes | Existing user id from `/onboarding/submit`. |
+> 注意：`user_id` 从认证Token中自动获取，无需在路径参数中传递。
 
 ### Response — [`KYCStatusResponse`](../app/schemas/kyc.py)
 | Field | Type | Description |

@@ -1,104 +1,42 @@
 import Foundation
 
-public enum ExecutionsAPIError: Error {
-    case invalidURL
-    case badResponse
-}
-
+/// Executions API - All endpoints require authentication
 @MainActor
 public final class ExecutionsAPI {
     public static let shared = ExecutionsAPI()
-    public let baseURL: URL
-
-    public init(baseURL: URL = URL(string: "http://localhost:8000")!) {
-        self.baseURL = baseURL
-    }
-
+    private let client = APIClient.shared
+    
+    private init() {}
+    
     public func updateExecution(executionId: Int, request: ExecutionUpdateRequest) async throws -> ExecutionUpdateResponse {
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/executions/\(executionId)"
-
-        guard let url = components.url else {
-            throw ExecutionsAPIError.invalidURL
-        }
-
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "PATCH"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let encoder = JSONEncoder()
-        urlRequest.httpBody = try encoder.encode(request)
-
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw ExecutionsAPIError.badResponse
-        }
-
-        let decoder = JSONDecoder()
-        return try decoder.decode(ExecutionUpdateResponse.self, from: data)
-    }
-
-    /// Fetch daily task plan with auto-expiration of overdue milestones
-    public func fetchDailyPlan(userId: Int, targetDate: String? = nil) async throws -> DailyTaskPlanResponse {
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/executions/daily"
-        
-        var queryItems = [URLQueryItem(name: "user_id", value: String(userId))]
-        if let targetDate = targetDate {
-            queryItems.append(URLQueryItem(name: "target_date", value: targetDate))
-        }
-        components.queryItems = queryItems
-
-        guard let url = components.url else {
-            throw ExecutionsAPIError.invalidURL
-        }
-
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "GET"
-
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw ExecutionsAPIError.badResponse
-        }
-
-        let decoder = JSONDecoder()
-        return try decoder.decode(DailyTaskPlanResponse.self, from: data)
+        try await client.patch(path: "/api/v1/executions/\(executionId)", body: request)
     }
     
+    /// GET /api/v1/executions/daily
+    /// Fetch daily task plan with auto-expiration of overdue milestones
+    public func fetchDailyPlan(targetDate: String? = nil) async throws -> DailyTaskPlanResponse {
+        var path = "/api/v1/executions/daily"
+        if let targetDate = targetDate {
+            path += "?target_date=\(targetDate)"
+        }
+        return try await client.get(path: path)
+    }
+    
+    /// GET /api/v1/executions/calendar/completion
+    public func getCalendarCompletion(startDate: String, endDate: String) async throws -> CalendarCompletionResponse {
+        let path = "/api/v1/executions/calendar/completion?start_date=\(startDate)&end_date=\(endDate)"
+        return try await client.get(path: path)
+    }
+    
+    // MARK: - Deprecated
+    
+    @available(*, deprecated, message: "Use fetchDailyPlan(targetDate:) - userId derived from token")
+    public func fetchDailyPlan(userId: Int, targetDate: String? = nil) async throws -> DailyTaskPlanResponse {
+        return try await fetchDailyPlan(targetDate: targetDate)
+    }
+    
+    @available(*, deprecated, message: "Use getCalendarCompletion(startDate:endDate:) - userId derived from token")
     public func getCalendarCompletion(userId: Int, startDate: String, endDate: String) async throws -> CalendarCompletionResponse {
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/executions/calendar/completion"
-        components.queryItems = [
-            URLQueryItem(name: "user_id", value: String(userId)),
-            URLQueryItem(name: "start_date", value: startDate),
-            URLQueryItem(name: "end_date", value: endDate)
-        ]
-
-        guard let url = components.url else {
-            throw ExecutionsAPIError.invalidURL
-        }
-
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "GET"
-
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw ExecutionsAPIError.badResponse
-        }
-
-        let decoder = JSONDecoder()
-        return try decoder.decode(CalendarCompletionResponse.self, from: data)
+        return try await getCalendarCompletion(startDate: startDate, endDate: endDate)
     }
 }

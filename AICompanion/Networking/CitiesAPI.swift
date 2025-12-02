@@ -1,38 +1,19 @@
 import Foundation
 
-public enum CitiesAPIError: Error {
-    case invalidURL
-    case badResponse
-}
-
+/// Cities API - NO AUTH REQUIRED (public utility endpoint)
 @MainActor
 public final class CitiesAPI {
     public static let shared = CitiesAPI()
-    public let baseURL: URL
-
-    public init(baseURL: URL = URL(string: "http://localhost:8000")!) {
-        self.baseURL = baseURL
-    }
-
+    private let client = APIClient.shared
+    
+    private init() {}
+    
     public func searchCities(query: String, limit: Int = 10) async throws -> [City] {
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/utils/cities"
-        var qItems: [URLQueryItem] = []
+        var path = "/api/v1/utils/cities?limit=\(limit)"
         if !query.isEmpty {
-            qItems.append(URLQueryItem(name: "q", value: query))
+            path += "&q=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)"
         }
-        qItems.append(URLQueryItem(name: "limit", value: String(limit)))
-        components.queryItems = qItems
-
-        guard let url = components.url else { throw CitiesAPIError.invalidURL }
-        let (data, response) = try await URLSession.shared.data(from: url)
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw CitiesAPIError.badResponse
-        }
-        let decoded = try JSONDecoder().decode(CityListResponse.self, from: data)
-        return decoded.cities
+        let response: CityListResponse = try await client.get(path: path, requiresAuth: false)
+        return response.cities
     }
 }

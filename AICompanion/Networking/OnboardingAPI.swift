@@ -1,228 +1,83 @@
 import Foundation
 
-public enum OnboardingAPIError: Error {
-    case invalidURL
-    case badResponse
-}
-
+/// Onboarding API - Mixed auth requirements
+/// - submit: NO auth required (creates guest user)
+/// - feedback, message, skip, status: Auth required
 @MainActor
 public final class OnboardingAPI {
     public static let shared = OnboardingAPI()
-    public let baseURL: URL
-
-    public init(baseURL: URL = URL(string: "http://localhost:8000")!) {
-        self.baseURL = baseURL
-    }
-
+    private let client = APIClient.shared
+    
+    private init() {}
+    
+    /// POST /api/v1/onboarding/submit - NO AUTH REQUIRED
+    /// Creates a guest user account with bazi info
     public func submit(_ request: OnboardingSubmitRequest) async throws -> OnboardingSubmitResponse {
         print("🌐 OnboardingAPI.submit() called")
-        
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/onboarding/submit"
-
-        guard let url = components.url else {
-            print("❌ Invalid URL")
-            throw OnboardingAPIError.invalidURL
-        }
-        
-        print("🌐 Request URL:", url.absoluteString)
-
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let encoder = JSONEncoder()
-        urlRequest.httpBody = try encoder.encode(request)
-        
-        if let bodyData = urlRequest.httpBody, let bodyString = String(data: bodyData, encoding: .utf8) {
-            print("🌐 Request body:", bodyString)
-        }
-        
-        print("🌐 Sending request...")
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-        
-        print("🌐 Response received")
-        if let http = response as? HTTPURLResponse {
-            print("🌐 Status code:", http.statusCode)
-        }
-        
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            print("❌ Bad response")
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("❌ Response body:", responseString)
-            }
-            throw OnboardingAPIError.badResponse
-        }
-        
-        if let responseString = String(data: data, encoding: .utf8) {
-            print("🌐 Response body:", responseString)
-        }
-
-        let decoder = JSONDecoder()
-        let decodedResponse = try decoder.decode(OnboardingSubmitResponse.self, from: data)
-        print("🌐 Successfully decoded response")
-        return decodedResponse
+        return try await client.post(path: "/api/v1/onboarding/submit", body: request, requiresAuth: false)
     }
-
+    
+    /// POST /api/v1/onboarding/feedback - AUTH REQUIRED
+    /// Submit personality trait feedback
     public func submitFeedback(_ request: OnboardingFeedbackRequest) async throws -> OnboardingFeedbackResponse {
         print("🌐 OnboardingAPI.submitFeedback() called")
-        
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/onboarding/feedback"
-
-        guard let url = components.url else {
-            print("❌ Invalid URL")
-            throw OnboardingAPIError.invalidURL
-        }
-        
-        print("🌐 Request URL:", url.absoluteString)
-
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let encoder = JSONEncoder()
-        urlRequest.httpBody = try encoder.encode(request)
-        
-        if let bodyData = urlRequest.httpBody, let bodyString = String(data: bodyData, encoding: .utf8) {
-            print("🌐 Request body:", bodyString)
-        }
-        
-        print("🌐 Sending request...")
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-        
-        print("🌐 Response received")
-        if let http = response as? HTTPURLResponse {
-            print("🌐 Status code:", http.statusCode)
-        }
-        
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            print("❌ Bad response")
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("❌ Response body:", responseString)
-            }
-            throw OnboardingAPIError.badResponse
-        }
-        
-        if let responseString = String(data: data, encoding: .utf8) {
-            print("🌐 Response body:", responseString)
-        }
-
-        let decoder = JSONDecoder()
-        let decodedResponse = try decoder.decode(OnboardingFeedbackResponse.self, from: data)
-        print("🌐 Successfully decoded response")
-        return decodedResponse
+        return try await client.post(path: "/api/v1/onboarding/feedback", body: request)
     }
-
+    
+    /// POST /api/v1/onboarding/message - AUTH REQUIRED
+    /// Send KYC chat message
     public func sendKYCMessage(_ request: KYCMessageRequest) async throws -> KYCMessageResponse {
         print("🌐 OnboardingAPI.sendKYCMessage() called")
-
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/onboarding/message"
-
-        guard let url = components.url else {
-            print("❌ Invalid URL")
-            throw OnboardingAPIError.invalidURL
-        }
-
-        print("🌐 Request URL:", url.absoluteString)
-
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let encoder = JSONEncoder()
-        urlRequest.httpBody = try encoder.encode(request)
-
-        if let bodyData = urlRequest.httpBody, let bodyString = String(data: bodyData, encoding: .utf8) {
-            print("🌐 Request body:", bodyString)
-        }
-
-        print("🌐 Sending request...")
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-
-        print("🌐 Response received")
-        if let http = response as? HTTPURLResponse {
-            print("🌐 Status code:", http.statusCode)
-        }
-
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            print("❌ Bad response")
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("❌ Response body:", responseString)
-            }
-            throw OnboardingAPIError.badResponse
-        }
-
-        if let responseString = String(data: data, encoding: .utf8) {
-            print("🌐 Response body:", responseString)
-        }
-
-        let decoder = JSONDecoder()
-        let decodedResponse = try decoder.decode(KYCMessageResponse.self, from: data)
-        print("🌐 Successfully decoded response")
-        return decodedResponse
+        return try await client.post(path: "/api/v1/onboarding/message", body: request)
     }
-
+    
+    /// POST /api/v1/onboarding/message/location - AUTH REQUIRED
+    /// Send KYC location message
+    public func sendKYCLocationMessage(_ request: KYCLocationMessageRequest) async throws -> KYCMessageResponse {
+        print("🌐 OnboardingAPI.sendKYCLocationMessage() called")
+        return try await client.post(path: "/api/v1/onboarding/message/location", body: request)
+    }
+    
+    /// POST /api/v1/onboarding/skip - AUTH REQUIRED
+    /// Skip KYC onboarding
     public func skip(_ request: OnboardingSkipRequest) async throws -> OnboardingSkipResponse {
         print("🌐 OnboardingAPI.skip() called")
-        
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/onboarding/skip"
+        return try await client.post(path: "/api/v1/onboarding/skip", body: request)
+    }
+    
+    /// GET /api/v1/onboarding/status - AUTH REQUIRED
+    /// Get KYC onboarding status
+    public func getStatus() async throws -> OnboardingStatusResponse {
+        print("🌐 OnboardingAPI.getStatus() called")
+        return try await client.get(path: "/api/v1/onboarding/status")
+    }
+    
+    // MARK: - Deprecated
+    
+    @available(*, deprecated, message: "Use getStatus() - userId derived from token")
+    public func getStatus(userId: Int) async throws -> OnboardingStatusResponse {
+        return try await getStatus()
+    }
+}
 
-        guard let url = components.url else {
-            print("❌ Invalid URL")
-            throw OnboardingAPIError.invalidURL
-        }
-        
-        print("🌐 Request URL:", url.absoluteString)
+/// KYC Location Message Request
+public struct KYCLocationMessageRequest: Encodable {
+    public let latitude: Double
+    public let longitude: Double
+    
+    public init(latitude: Double, longitude: Double) {
+        self.latitude = latitude
+        self.longitude = longitude
+    }
+}
 
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let encoder = JSONEncoder()
-        urlRequest.httpBody = try encoder.encode(request)
-        
-        if let bodyData = urlRequest.httpBody, let bodyString = String(data: bodyData, encoding: .utf8) {
-            print("🌐 Request body:", bodyString)
-        }
-        
-        print("🌐 Sending request...")
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-        
-        print("🌐 Response received")
-        if let http = response as? HTTPURLResponse {
-            print("🌐 Status code:", http.statusCode)
-        }
-        
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            print("❌ Bad response")
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("❌ Response body:", responseString)
-            }
-            throw OnboardingAPIError.badResponse
-        }
-        
-        if let responseString = String(data: data, encoding: .utf8) {
-            print("🌐 Response body:", responseString)
-        }
-
-        let decoder = JSONDecoder()
-        let decodedResponse = try decoder.decode(OnboardingSkipResponse.self, from: data)
-        print("🌐 Successfully decoded response")
-        return decodedResponse
+/// Onboarding Status Response
+public struct OnboardingStatusResponse: Decodable {
+    public let hasCompletedKyc: Bool
+    public let kycProgress: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case hasCompletedKyc = "has_completed_kyc"
+        case kycProgress = "kyc_progress"
     }
 }

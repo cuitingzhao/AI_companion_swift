@@ -1,44 +1,27 @@
 import Foundation
 
-public enum ProfileAPIError: Error {
-    case invalidURL
-    case badResponse
-}
-
+/// Profile API - All endpoints require authentication
 @MainActor
 public final class ProfileAPI {
     public static let shared = ProfileAPI()
-    public let baseURL: URL
-
-    public init(baseURL: URL = URL(string: "http://localhost:8000")!) {
-        self.baseURL = baseURL
-    }
-
+    private let client = APIClient.shared
+    
+    private init() {}
+    
+    /// POST /api/v1/profile/location
     public func updateLocation(_ request: LocationUpdateRequest) async throws -> LocationUpdateResponse {
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/profile/location"
-
-        guard let url = components.url else {
-            throw ProfileAPIError.invalidURL
-        }
-
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let encoder = JSONEncoder()
-        urlRequest.httpBody = try encoder.encode(request)
-
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw ProfileAPIError.badResponse
-        }
-
-        let decoder = JSONDecoder()
-        return try decoder.decode(LocationUpdateResponse.self, from: data)
+        return try await client.post(path: "/api/v1/profile/location", body: request)
+    }
+    
+    /// GET /api/v1/profile/location
+    public func getLocation() async throws -> LocationUpdateResponse {
+        return try await client.get(path: "/api/v1/profile/location")
+    }
+    
+    // MARK: - Deprecated
+    
+    @available(*, deprecated, message: "Use getLocation() - userId derived from token")
+    public func getLocation(userId: Int) async throws -> LocationUpdateResponse {
+        return try await getLocation()
     }
 }

@@ -6,8 +6,14 @@ public final class APIClient {
     public static let shared = APIClient()
     public let baseURL: URL
     
-    public init(baseURL: URL = URL(string: "http://localhost:8000")!) {
-        self.baseURL = baseURL
+    /// Production: https://diandian-api.gaiaforall.com
+    /// Debug: http://localhost:8000
+    public init() {
+        #if DEBUG
+        self.baseURL = URL(string: "http://localhost:8000")!
+        #else
+        self.baseURL = URL(string: "https://diandian-api.gaiaforall.com")!
+        #endif
     }
     
     // MARK: - Request Building
@@ -19,7 +25,9 @@ public final class APIClient {
         body: Data? = nil,
         requiresAuth: Bool = true
     ) async -> URLRequest {
-        let url = baseURL.appendingPathComponent(path)
+        // Use URL(string:relativeTo:) to properly handle query parameters
+        // appendingPathComponent would URL-encode ? and & characters
+        let url = URL(string: path, relativeTo: baseURL)!
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -100,6 +108,17 @@ public final class APIClient {
         requiresAuth: Bool = true
     ) async throws -> T {
         let request = await makeRequest(path: path, method: "DELETE", requiresAuth: requiresAuth)
+        return try await perform(request)
+    }
+    
+    /// Performs a DELETE request with an encodable body
+    public func delete<T: Decodable, B: Encodable>(
+        path: String,
+        body: B,
+        requiresAuth: Bool = true
+    ) async throws -> T {
+        let bodyData = try JSONEncoder().encode(body)
+        let request = await makeRequest(path: path, method: "DELETE", body: bodyData, requiresAuth: requiresAuth)
         return try await perform(request)
     }
     

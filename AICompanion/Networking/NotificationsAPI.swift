@@ -4,7 +4,6 @@ import UIKit
 // MARK: - Request/Response Models
 
 public struct DeviceTokenRequest: Codable {
-    public let userId: Int
     public let deviceId: String
     public let platform: String
     public let pushToken: String
@@ -13,8 +12,7 @@ public struct DeviceTokenRequest: Codable {
     public let osVersion: String?
     public let deviceModel: String?
     
-    public init(userId: Int, deviceId: String, pushToken: String) {
-        self.userId = userId
+    public init(deviceId: String, pushToken: String) {
         self.deviceId = deviceId
         self.platform = "ios"
         self.pushToken = pushToken
@@ -25,7 +23,6 @@ public struct DeviceTokenRequest: Codable {
     }
     
     enum CodingKeys: String, CodingKey {
-        case userId = "user_id"
         case deviceId = "device_id"
         case platform
         case pushToken = "push_token"
@@ -59,11 +56,9 @@ public struct DeviceTokenResponse: Codable {
 }
 
 public struct UnregisterDeviceRequest: Codable {
-    public let userId: Int
     public let deviceId: String
     
     enum CodingKeys: String, CodingKey {
-        case userId = "user_id"
         case deviceId = "device_id"
     }
 }
@@ -74,107 +69,40 @@ public struct UnregisterDeviceResponse: Codable {
 
 // MARK: - Notifications API
 
-public enum NotificationsAPIError: Error {
-    case invalidURL
-    case badResponse
-    case decodingError
-    case registrationFailed(String)
-}
-
+/// Notifications API - All endpoints require authentication
 @MainActor
 public final class NotificationsAPI {
     public static let shared = NotificationsAPI()
-    public let baseURL: URL
+    private let client = APIClient.shared
     
-    public init(baseURL: URL = URL(string: "http://localhost:8000")!) {
-        self.baseURL = baseURL
-    }
+    private init() {}
     
     /// POST /api/v1/notifications/device-token
     /// Register or update a device push token.
-    public func registerDeviceToken(userId: Int, pushToken: String) async throws -> DeviceTokenResponse {
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/notifications/device-token"
-        
-        guard let url = components.url else {
-            throw NotificationsAPIError.invalidURL
-        }
-        
-        // Get device ID
+    public func registerDeviceToken(pushToken: String) async throws -> DeviceTokenResponse {
         let deviceId = UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
-        
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let request = DeviceTokenRequest(userId: userId, deviceId: deviceId, pushToken: pushToken)
-        let encoder = JSONEncoder()
-        urlRequest.httpBody = try encoder.encode(request)
-        
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-        
-        guard let http = response as? HTTPURLResponse else {
-            throw NotificationsAPIError.badResponse
-        }
-        
-        guard (200..<300).contains(http.statusCode) else {
-            if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ NotificationsAPI register error: \(errorString)")
-            }
-            throw NotificationsAPIError.registrationFailed("设备注册失败")
-        }
-        
-        // Debug: Print raw response
-        if let rawString = String(data: data, encoding: .utf8) {
-            print("🔔 NotificationsAPI register response: \(rawString)")
-        }
-        
-        let decoder = JSONDecoder()
-        return try decoder.decode(DeviceTokenResponse.self, from: data)
+        let request = DeviceTokenRequest(deviceId: deviceId, pushToken: pushToken)
+        return try await client.post(path: "/api/v1/notifications/device-token", body: request)
     }
     
     /// DELETE /api/v1/notifications/device-token
     /// Unregister a device token (mark as inactive).
-    public func unregisterDeviceToken(userId: Int) async throws -> Bool {
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.port = baseURL.port
-        components.path = "/api/v1/notifications/device-token"
-        
-        guard let url = components.url else {
-            throw NotificationsAPIError.invalidURL
-        }
-        
-        // Get device ID
+    public func unregisterDeviceToken() async throws -> UnregisterDeviceResponse {
         let deviceId = UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
-        
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "DELETE"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let request = UnregisterDeviceRequest(userId: userId, deviceId: deviceId)
-        let encoder = JSONEncoder()
-        urlRequest.httpBody = try encoder.encode(request)
-        
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-        
-        guard let http = response as? HTTPURLResponse else {
-            throw NotificationsAPIError.badResponse
-        }
-        
-        guard (200..<300).contains(http.statusCode) else {
-            if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ NotificationsAPI unregister error: \(errorString)")
-            }
-            return false
-        }
-        
-        let decoder = JSONDecoder()
-        let result = try decoder.decode(UnregisterDeviceResponse.self, from: data)
-        return result.success
+        let request = UnregisterDeviceRequest(deviceId: deviceId)
+        return try await client.delete(path: "/api/v1/notifications/device-token", body: request)
+    }
+    
+    // MARK: - Deprecated (use methods without userId)
+    
+    @available(*, deprecated, message: "Use registerDeviceToken(pushToken:) instead - userId is now derived from token")
+    public func registerDeviceToken(userId: Int, pushToken: String) async throws -> DeviceTokenResponse {
+        try await registerDeviceToken(pushToken: pushToken)
+    }
+    
+    @available(*, deprecated, message: "Use unregisterDeviceToken() instead - userId is now derived from token")
+    public func unregisterDeviceToken(userId: Int) async throws -> Bool {
+        let response = try await unregisterDeviceToken()
+        return response.success
     }
 }

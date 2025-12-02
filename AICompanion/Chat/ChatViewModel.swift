@@ -206,14 +206,9 @@ class ChatViewModel: ObservableObject {
                 // Per backend contract: client should read from pending_client_actions at top level
                 await handlePendingActions(response.pendingClientActions)
                 
-            } catch let error as MediaAPIError {
-                switch error {
-                case .uploadFailed(let message):
-                    errorText = message
-                default:
-                    errorText = "图片上传失败，请稍后再试。"
-                }
-                print("❌ Media upload error:", error)
+            } catch let error as APIError {
+                errorText = error.localizedDescription
+                print("❌ API error:", error)
             } catch {
                 errorText = "消息发送失败，请检查网络后稍后再试。"
                 print("❌ Chat message error:", error)

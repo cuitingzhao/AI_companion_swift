@@ -2,9 +2,18 @@
 
 Source file: [`app/api/v1/endpoints/chat.py`](../app/api/v1/endpoints/chat.py)
 
+> ⚠️ **认证要求**: 本模块所有接口都需要Bearer Token认证。请在请求头中添加：
+> ```
+> Authorization: Bearer <access_token>
+> ```
+
+---
+
 ## 1. POST `/api/v1/chat/message`
 
 Process a user message in the main companion chat with optional tool calling support.
+
+**🔒 需要认证**
 
 ### Description
 
@@ -26,7 +35,6 @@ This is the primary chat endpoint for the AI companion. It:
 
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
-| `user_id` | integer | Yes | User ID (must be > 0). |
 | `message` | string | Yes | User's chat message (1-4000 characters). |
 | `images` | array of string | No | List of image URLs (http/https) or base64 data URIs. Max 4 images per message. When provided, uses vision model (Doubao-Seed-1.6). |
 | `model_name` | string | No | Optional model override. Defaults to `MODEL_MAIN_CHAT` env var or `deepseek-chat`. Ignored when images are provided. |
@@ -141,8 +149,8 @@ The mobile app should:
 ```bash
 curl -X POST "http://localhost:8000/api/v1/chat/message?enable_tools=true" \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <access_token>" \
   -d '{
-    "user_id": 1,
     "message": "今天运势怎么样？"
   }'
 ```
@@ -271,8 +279,8 @@ curl -X POST "http://localhost:8000/api/v1/chat/message?enable_tools=true" \
 ```bash
 curl -X POST "http://localhost:8000/api/v1/chat/message" \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <access_token>" \
   -d '{
-    "user_id": 1,
     "message": "这张图片里是什么？",
     "images": ["https://example.com/photo.jpg"]
   }'
@@ -351,9 +359,10 @@ assistant typing in real time.
 
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
-| `user_id` | integer | Yes | User ID (must be > 0). |
 | `message` | string | Yes | User's chat message (1-4000 characters). |
 | `model_name` | string | No | Optional model override. Defaults to `MODEL_MAIN_CHAT` env var or `deepseek-chat`. |
+
+> 注意：`user_id` 从认证Token中自动获取，无需在请求体中传递。
 
 ### Response — SSE Event Stream
 
@@ -425,8 +434,8 @@ The client should treat this as a terminal failure for the stream.
 curl -N \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
+  -H "Authorization: Bearer <access_token>" \
   -d '{
-    "user_id": 1,
     "message": "简单自我介绍一下吧"
   }' \
   http://localhost:8000/api/v1/chat/message/stream
@@ -436,19 +445,17 @@ The `-N` flag tells `curl` to disable buffering so you can see tokens as they ar
 
 ---
 
-## 2. GET `/api/v1/chat/history/{user_id}`
+## 2. GET `/api/v1/chat/history`
 
-Get paginated chat history for a user.
+Get paginated chat history for current user.
+
+**🔒 需要认证**
 
 ### Description
 
 Returns chat messages in chronological order (oldest first). Supports cursor-based pagination for loading older messages.
 
-### Path Parameters
-
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `user_id` | integer | User ID |
+> 注意：`user_id` 从认证Token中自动获取，无需在路径参数中传递。
 
 ### Query Parameters
 
@@ -481,10 +488,10 @@ Returns chat messages in chronological order (oldest first). Supports cursor-bas
 
 ```bash
 # Get latest 50 messages
-curl "http://localhost:8000/api/v1/chat/history/1"
+curl -H "Authorization: Bearer <access_token>" "http://localhost:8000/api/v1/chat/history"
 
 # Get 20 messages before message ID 100
-curl "http://localhost:8000/api/v1/chat/history/1?limit=20&before_id=100"
+curl -H "Authorization: Bearer <access_token>" "http://localhost:8000/api/v1/chat/history?limit=20&before_id=100"
 ```
 
 ### Example Response
@@ -534,10 +541,10 @@ curl "http://localhost:8000/api/v1/chat/history/1?limit=20&before_id=100"
 3. **Stop when**: `has_more` is `false`.
 
 ```
-Initial:  GET /chat/history/1?limit=50
+Initial:  GET /chat/history?limit=50
           → messages[0..49], oldest_id=50, has_more=true
 
-Page 2:   GET /chat/history/1?limit=50&before_id=50
+Page 2:   GET /chat/history?limit=50&before_id=50
           → messages[0..49], oldest_id=1, has_more=false
 ```
 
@@ -549,9 +556,11 @@ Page 2:   GET /chat/history/1?limit=50&before_id=50
 
 ---
 
-## 3. GET `/api/v1/chat/greeting/{user_id}`
+## 3. GET `/api/v1/chat/greeting`
 
 Generate a personalized AI greeting when user opens the chat.
+
+**🔒 需要认证**
 
 ### Description
 
@@ -562,11 +571,7 @@ Returns a warm, contextual greeting based on:
 
 Call this endpoint when the user opens the chat interface to display a personalized welcome message instead of an empty screen.
 
-### Path Parameters
-
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `user_id` | integer | User ID |
+> 注意：`user_id` 从认证Token中自动获取，无需在路径参数中传递。
 
 ### Response — [`ChatGreetingResponse`](../app/schemas/chat.py)
 
@@ -579,7 +584,7 @@ Call this endpoint when the user opens the chat interface to display a personali
 ### Example Request
 
 ```bash
-curl "http://localhost:8000/api/v1/chat/greeting/1"
+curl -H "Authorization: Bearer <access_token>" "http://localhost:8000/api/v1/chat/greeting"
 ```
 
 ### Example Responses
@@ -616,7 +621,7 @@ curl "http://localhost:8000/api/v1/chat/greeting/1"
 ```
 User opens chat screen
     ↓
-App calls GET /chat/greeting/{user_id}
+App calls GET /chat/greeting (with auth header)
     ↓
 Display greeting as first message (assistant bubble)
     ↓
