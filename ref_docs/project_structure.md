@@ -4,7 +4,6 @@
 AICompanion/
 |-- AICompanion/
 |   |-- AICompanionApp.swift (app entry point)
-|   |-- TaskForTodayView.swift (daily task overview after onboarding)
 |   |-- SpeechRecognizer.swift
 |   |-- Models/
 |   |   |-- City.swift
@@ -16,12 +15,14 @@ AICompanion/
 |   |   |-- CalendarModels.swift (calendar info for homepage header)
 |   |   |-- FortuneModels.swift (daily fortune response models)
 |   |   |-- ChatModels.swift (chat API request/response models)
+|   |   |-- AuthModels.swift (authentication request/response models)
 |   |-- DesignSystem/
 |   |   |-- Colors.swift (Neobrutalism color palette)
 |   |   |-- Fonts.swift (Bold typography for Neobrutalism)
 |   |   |-- NeoBrutalModifiers.swift (Reusable view modifiers for borders/shadows)
 |   |   |-- Components/
-|   |       |-- PrimaryButton.swift (Neobrutalist button with hard shadow)
+|   |       |-- PrimaryButton.swift (Neobrutalist button with 3D depth effect)
+|   |       |-- SimpleButton.swift (Simple button with shadow, used in onboarding flow)
 |   |       |-- AppTextField.swift (Neobrutalist text field)
 |   |       |-- VoiceInputButton.swift
 |   |       |-- AppDialog.swift
@@ -30,8 +31,11 @@ AICompanion/
 |   |       |-- GIFImage.swift (animated GIF display component)
 |   |       |-- AppToggle.swift (reusable toggle component with round knob: AppToggle, RoundKnobToggleStyle)
 |   |       |-- DialogComponents.swift (reusable dialog components: DialogContainer, DialogHeader, LabeledTextField, OptionPicker, DateTogglePicker, DialogButtonRow, ConfirmationDialogOverlay)
+|   |       |-- CachedAsyncImage.swift (cached async image loader to prevent cancellation in LazyVStack)
 |   |
 |   |-- Networking/
+|   |   |-- APIClient.swift (shared API client with auth header injection)
+|   |   |-- AuthAPI.swift (authentication endpoints: SMS, verify, refresh, me)
 |   |   |-- CitiesAPI.swift
 |   |   |-- OnboardingAPI.swift
 |   |   |-- ProfileAPI.swift
@@ -40,23 +44,27 @@ AICompanion/
 |   |   |-- FortuneAPI.swift (GET /api/v1/fortune/daily)
 |   |   |-- ExecutionsAPI.swift (PATCH /api/v1/executions/{execution_id})
 |   |   |-- ChatAPI.swift (POST /api/v1/chat/message)
+|   |   |-- MediaAPI.swift (POST /api/v1/media/upload/image for image uploads)
+|   |   |-- NotificationsAPI.swift (POST /api/v1/notifications/device-token for push notifications)
 |   |
 |   |-- Services/
+|   |   |-- AuthManager.swift (Keychain token storage, auth state management)
 |   |   |-- LocationService.swift
 |   |   |-- PermissionManager.swift (JIT permission requests for iOS native tools)
 |   |   |-- NativeToolExecutor.swift (executes calendar, alarm, health, screen time actions)
 |   |   |-- SpeechRecognizer.swift (speech to text service)
+|   |   |-- PushNotificationManager.swift (APNs token registration and notification handling)
 |   |
 |   |-- Onboarding/
-|   |   |-- OnboardingState.swift
+|   |   |-- OnboardingState.swift (includes auth flow routing logic)
 |   |   |-- OnboardingScaffold.swift
 |   |   |-- OnboardingHeader.swift
-|   |   |-- OnboardingIntroView.swift
-|   |   |-- OnboardingNicknameView.swift
+|   |   |-- OnboardingIntroView.swift (consolidated intro + nickname input, optional login button)
 |   |   |-- OnboardingProfileView.swift
+|   |   |-- LoginView.swift (SMS login/register for guest users)
 |   |   |-- OnboardingLoadingView.swift
-|   |   |-- BaziAnalysisResultView.swift
-|   |   |-- KYCIntroView.swift
+|   |   |-- BaziAnalysisResultView.swift (consolidated with KYC intro buttons)
+|   |   |-- KYCIntroView.swift (deprecated, functionality moved to BaziAnalysisResultView)
 |   |   |-- KYCPersonalityReviewView.swift
 |   |   |-- PersonalityReviewEndView.swift
 |   |   |-- KYCChatView.swift
