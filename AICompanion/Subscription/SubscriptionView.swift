@@ -232,7 +232,11 @@ public struct SubscriptionView: View {
                 .multilineTextAlignment(.center)
             
             HStack(spacing: 16) {
-                Button(action: { /* Open terms */ }) {
+                Button(action: {
+                    if let url = URL(string: "https://www.gaiaforall.com/diandian/terms/") {
+                        UIApplication.shared.open(url)
+                    }
+                }) {
                     Text("使用条款")
                         .font(AppFonts.caption)
                         .foregroundStyle(AppColors.purple)
@@ -240,7 +244,11 @@ public struct SubscriptionView: View {
                 }
                 .buttonStyle(.plain)
                 
-                Button(action: { /* Open privacy */ }) {
+                Button(action: {
+                    if let url = URL(string: "https://www.gaiaforall.com/diandian/privacy/") {
+                        UIApplication.shared.open(url)
+                    }
+                }) {
                     Text("隐私政策")
                         .font(AppFonts.caption)
                         .foregroundStyle(AppColors.purple)

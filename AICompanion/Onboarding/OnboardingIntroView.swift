@@ -127,11 +127,21 @@ public struct OnboardingIntroView: View {
         }
         .alert("用户隐私政策", isPresented: $isShowingPrivacyPolicy) {
             Button("关闭", role: .cancel) { }
+            Button("查看全文") {
+                if let url = URL(string: "https://www.gaiaforall.com/diandian/privacy/") {
+                    UIApplication.shared.open(url)
+                }
+            }
         } message: {
             Text("这里展示用户隐私政策的详细内容。")
         }
         .alert("使用协议", isPresented: $isShowingUserAgreement) {
             Button("关闭", role: .cancel) { }
+            Button("查看全文") {
+                if let url = URL(string: "https://www.gaiaforall.com/diandian/terms/") {
+                    UIApplication.shared.open(url)
+                }
+            }
         } message: {
             Text("这里展示使用协议的详细内容。")
         }
